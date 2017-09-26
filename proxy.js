@@ -53,7 +53,7 @@ plugin.connect().then(function () {
             }
           }
           plugin.addListener('outgoing_fulfill', listenerForThisTransfer)
-        }, function (err) {
+        }).catch(function (err) {
           console.error(err.message)
         })
       } else {
@@ -62,4 +62,5 @@ plugin.connect().then(function () {
       }
     })
   }).listen(8001)
+  console.log('Open http://localhost:8001 with your browser')
 })

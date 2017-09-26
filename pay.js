@@ -16,13 +16,14 @@ const plugin = new Plugin({
 
 plugin.connect().then(function () {
   plugin.on('outgoing_fulfill', function (transferId, fulfillment) {
-    console.log('Got the fulfillment, you paid for your letter! Go get it at http://localhost:8000/' + fulfillment)
+    console.log('Got the fulfillment, you paid for your letter!')
+    console.log('Go get it at http://localhost:8000/' + fulfillment)
     plugin.disconnect()
     process.exit()
   })
 
   // Fill in the required fields for
-  // https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-7.html
+  // https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-8.html
   plugin.sendTransfer({
     to: destinationAddress,
     amount: destinationAmount,
@@ -30,11 +31,14 @@ plugin.connect().then(function () {
     id: uuid(),
     from: plugin.getAccount(),
     ledger: plugin.getInfo().prefix,
-    ilp: base64url(IlpPacket.serializeIlpPayment({ amount: destinationAmount, account: destinationAddress })),
+    ilp: base64url(IlpPacket.serializeIlpPayment({
+      amount: destinationAmount,
+      account: destinationAddress
+    })),
     expiresAt: new Date(new Date().getTime() + 1000000).toISOString()
   }).then(function () {
     console.log('transfer prepared, waiting for fulfillment...')
-  }, function (err) {
+  }).catch(function (err) {
     console.error(err.message)
   })
 })
