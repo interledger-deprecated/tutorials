@@ -7,6 +7,7 @@ first time. The main programming language used is JavaScript.
 ## Tutorials
 
 * [The Letter Shop](./letter-shop)
+* [Streaming Payments](./streaming-payments)
 
 ## Versioning
 
