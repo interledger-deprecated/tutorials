@@ -19,7 +19,7 @@
 
 Open a command line terminal and `git clone` https://github.com/interledger/tutorials, or
 if you prefer to download the code as a zip file, you can just visit that URL with your
-browser, click 'Clone or Download'. On that URL you can also browse the JavaScript files
+browser and click 'Clone or Download'. On that URL you can also browse the JavaScript files
 online without downloading them.
 
 Assuming you now either cloned the repository, or unzipped your download, with your command
@@ -39,9 +39,10 @@ const Plugin = require('ilp-plugin-xrp-escrow')
 
 // [...]
 
-// A plugin is a piece of code that talks to a specific account on a specific ledger. In this case, we will be talking
-// to an account on the XRP testnet, using the 'ilp-plugin-xrp-escrow' plugin. All ILP plugin repositories on github start
-// with ['ilp-plugin-'](https://github.com/search?utf8=%E2%9C%93&q=ilp-plugin-).
+// A plugin is a piece of code that talks to a specific account on a specific ledger.
+// In this case, we will be talking to an account on the XRP testnet, using the
+// 'ilp-plugin-xrp-escrow' plugin. All ILP plugin repositories on github start with
+// ['ilp-plugin-'](https://github.com/search?utf8=%E2%9C%93&q=ilp-plugin-).
 const plugin = new Plugin({
   secret: 'ssGjGT4sz4rp2xahcDj87P71rTYXo',
   account: 'rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW',
@@ -50,8 +51,8 @@ const plugin = new Plugin({
 })
 
 plugin.connect().then(function () {
-  // once the plugin is connected, listen for events; the 'incoming_prepare' event indicates an incoming
-  // conditional transfer.
+  // once the plugin is connected, listen for events; the 'incoming_prepare' event
+  // indicates an incoming conditional transfer.
   plugin.on('incoming_prepare', function (transfer) {
     if (transfer.amount !== '10') {
       plugin.rejectIncomingTransfer(transfer.id, {
@@ -64,9 +65,11 @@ plugin.connect().then(function () {
         additional_info: {}
       })
     } else {
-      // the ledger will check if the fulfillment is correct and if it was submitted before the transfer's
-      // rollback timeout
-      plugin.fulfillCondition(transfer.id, fulfillments[transfer.executionCondition]).catch(function () {})
+      // the ledger will check if the fulfillment is correct and if it was submitted
+      // before the transfer's rollback timeout
+      plugin
+        .fulfillCondition(transfer.id, fulfillments[transfer.executionCondition])
+        .catch(function () {})
     }
   })
 
@@ -79,25 +82,25 @@ Since Interledger connects potentially very different ledgers together, we need 
 
 ### Interledger addresses
 
-The prefix is an Interledger prefix, which is like an [IP subnet](https://en.wikipedia.org/wiki/Subnetwork). In this case, `test.` indicates that we are connecting to the Interledger testnet-of-testnets. The next part, `crypto.` indicates that we will be referring to a crypto currency's ledger. And finally, `xrp.` indicates that this ledger is the XRP testnet ledger. If you know the ledger prefix and the account, you can put them together to get the Interledger Address (see [IL-RFC-15, draft 1](https://interledger.org/rfcs/0015-ilp-addresses/draft-1.html)). In this case, the Interledger address of our Letter Shop is `test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW`.
+The prefix is an Interledger prefix, which is like an [IP subnet](https://en.wikipedia.org/wiki/Subnetwork). In this case, `test.` indicates that we are connecting to a testnet ledger. The next part, `crypto.` indicates that we will be referring to a crypto currency's ledger. And finally, `xrp.` indicates that this ledger is the XRP testnet ledger. If you know the ledger prefix and the account, you can put them together to get the Interledger Address (see [IL-RFC-15, draft 1](https://interledger.org/rfcs/0015-ilp-addresses/draft-1.html)). In this case, the Interledger address of our Letter Shop is `test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW`.
 
 ### Prepare and Fulfill with on-ledger Escrow
-The easiest way to understand cryptographic escrow is by looking at [`shop.js`, lines 45-50](https://github.com/interledger/tutorials/blob/master/shop.js#L45-L50):
+The easiest way to understand cryptographic escrow is by looking at [`shop.js`, lines 49-53](https://github.com/interledger/tutorials/blob/master/shop.js#L49-L53):
 
 ```js
 function base64url (buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') }
+function sha256 (preimage) { return crypto.createHash('sha256').update(preimage).digest() }
 
 // [...]
 
 // Generate a preimage and its SHA256 hash,
 // which we'll use as the fulfillment and condition, respectively, of the
 // conditional transfer.
-const secret = crypto.randomBytes(32)
-const fulfillment = base64url(secret)
-const condition = base64url(crypto.createHash('sha256').update(secret).digest())
+const fulfillment = crypto.randomBytes(32)
+const condition = sha256(fulfillment)
 ```
 
-The plugin used here is specific to XRP, and to the use of on-ledger escrow. Escrow for XRP is described [here](https://ripple.com/build/rippleapi/#transaction-types). Escrow transfers differ from normal transfer in that the recipient doesn't automatically receive the amount of the transfer in their account; the need to produce something in order to claim the funds. During the time between the sender's action of preparing the transfer (creating the escrow), and the time the recipient produces the fulfillment for the transfer's condition, the money is on hold on the ledger. If the recipient doesn't produce the fulfillment in time, the transaction is canceled, and the money goes back into the sender's account.
+The plugin used here is specific to XRP, and to the use of on-ledger escrow. Escrow for XRP is described [here](https://ripple.com/build/rippleapi/#transaction-types). Escrow transfers differ from normal transfers in that the recipient doesn't automatically receive the amount of the transfer in their account; they need to produce something in order to claim the funds. During the time between the sender's action of preparing the transfer (creating the escrow), and the time the recipient produces the fulfillment for the transfer's condition, the money is on hold on the ledger. If the recipient doesn't produce the fulfillment in time, the transaction is canceled, and the money goes back into the sender's account.
 
 ### Hashlocks
 In the case of Interledger, transfers are always conditional: first, they are "prepared", with a "condition". This condition is the sha256 hash of a "fulfillment". With that fulfillment, the transfer is later "executed". Condition and fulfillment are always 32 bytes each.
@@ -118,17 +121,18 @@ As the instructions say, visit that URL to get your letter! :)
 
 ### Sending transfers
 
-To send an Interledger payment, call the `plugin.sendTransfer` method of any connected Interledger plugin, have a look at [`pay.js`, lines 17-39](https://github.com/interledger/tutorials/blob/master/pay.js#L17-L39):
+The Ledger Plugin Interface exposes a method, [`plugin.sendTransfer`](https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-8.html#sendtransfer), which allows you to prepare an on-ledger transfer. You can see it used in [`pay.js`, lines 17-44](https://github.com/interledger/tutorials/blob/master/pay.js#L17-L44):
 ```js
 plugin.connect().then(function () {
   plugin.on('outgoing_fulfill', function (transferId, fulfillment) {
-    console.log('Got the fulfillment, you paid for your letter! Go get it at http://localhost:8000/' + fulfillment)
+    console.log('Got the fulfillment, you paid for your letter!')
+    console.log('Go get it at http://localhost:8000/' + fulfillment)
     plugin.disconnect()
     process.exit()
   })
 
   // Fill in the required fields for
-  // https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-7.html
+  // https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-8.html
   plugin.sendTransfer({
     to: destinationAddress,
     amount: destinationAmount,
@@ -136,20 +140,26 @@ plugin.connect().then(function () {
     id: uuid(),
     from: plugin.getAccount(),
     ledger: plugin.getInfo().prefix,
-    ilp: base64url(IlpPacket.serializeIlpPayment({ amount: destinationAmount, account: destinationAddress })),
+    ilp: base64url(IlpPacket.serializeIlpPayment({
+      amount: destinationAmount,
+      account: destinationAddress
+    })),
     expiresAt: new Date(new Date().getTime() + 1000000).toISOString()
   }).then(function () {
     console.log('transfer prepared, waiting for fulfillment...')
-  }, function (err) {
+  }).catch(function (err) {
     console.error(err.message)
   })
+})
 ```
 
-The `'outgoing_fulfill'` event will indicate that the payment was successful. See the [draft 7 of the LPI spec](https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-7.html) for more details.
+The `'outgoing_fulfill'` event will indicate that the payment was successful. See [draft 6 of the LPI spec](https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-8.html) for more details.
 
 ## Step 3: Paying proxy
 
-It's of course very cumbersome to copy and paste the condition from your browser to your command-line terminal each time you need to pay for something online, and then to copy and paste back the fulfillment from your terminal to your browser once you paid. Therefore, the following paying proxy is useful, which parses the shop's human-readable payment instructions, executes them, retreives the paid content, and serves it on port 8001. Run it with:
+So now you've already seen how you can build a paid web app where content is only accessible when people pay for it via Interledger, and you've also seen a first glimpse of the
+Ledger Plugin Interface, with which you can make such an Interledger payment from a script.
+But it's of course very cumbersome to copy and paste the condition from your browser to your command-line terminal each time you need to pay for something online, and then to copy and paste back the fulfillment from your terminal to your browser once you paid. Therefore, the following paying proxy is useful, which parses the shop's human-readable payment instructions, executes them, retrieves the paid content, and serves it on port 8001. Run it with:
 
 ```sh
 node ./shop.js # unless your shop was still running from before
@@ -183,7 +193,7 @@ you will see various alternatives to this, like machine-readable Interledger Pay
 
 ## Concepts learned
 
-The plugin used in all three scripts exposes the Ledger Plugin Interface (LPI) as described in [IL-RPC-4, draft 6](https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-6.html), and of that, this script uses the following methods and events:
+The plugin used in all three scripts exposes the Ledger Plugin Interface (LPI) as described in [IL-RPC-4, draft 8](https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-8.html), and of that, these scripts use the following methods and events:
 * `sendTransfer` method (in `pay.js` and `proxy.js`, prepares a transfer to some other account on the same ledger)
 * `getInfo` method (used in `pay.js` and `proxy.js` to fill in the `ledger` field to pass to `sendTransfer`)
 * `getAccount` method (used in `pay.js` and `proxy.js` to fill in the `from` field to pass to `sendTransfer`)
@@ -192,5 +202,5 @@ The plugin used in all three scripts exposes the Ledger Plugin Interface (LPI) a
 * `incoming_prepare` event (in `shop.js`, is triggered when someone else sends you a conditional transfer)
 * `outgoing_fulfill` event (in `pay.js` and `proxy.js`, is triggered when someone else fulfills your conditional transfer)
 
-If you read the paragraphs above, you will have seen quite a few new words; see the glossary in [IL-RFC-19, draft 1](https://interledger.org/rfcs/0019-glossary/draft-1.html) as a reference if you
+You will have seen quite a few new words in this tutorial; see the glossary in [IL-RFC-19, draft 1](https://interledger.org/rfcs/0019-glossary/draft-1.html) as a reference if you
 forget some of them.

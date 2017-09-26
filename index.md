@@ -24,7 +24,7 @@ Interledger Requests For Comments (IL-RFCs):
 The software you will build during these tutorials will be compatible with software
 written by other developers, on several levels:
 
-* Ledger Plugins will expose the Ledger Plugin Interface (LPI) as described in [IL-RFC-4, draft 6](https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-6.html).
+* Ledger Plugins will expose the Ledger Plugin Interface (LPI) as described in [IL-RFC-4, draft 8](https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-8.html).
 * Websites that (like in the Streaming Payments tutorial) include request for payment in their HTTP responses will expose the `Pay` header as proposed in https://github.com/interledger/rfcs/issues/307
 * Publically accessible websites that (like in the Letter Shop tutorial) print a human-readable payment request, will include an Interledger address in there that is reachable from [Amundsen](https://amundsen.michielbdejong.com/), the bootstrap node for the Interledger testnet-of-testnets. The amount in there will be a stringified positive Integer, and the condition will be encoded using [URL-safe base64](https://github.com/interledger/tutorials/blob/dcde0af71854fc15c38a209a53f43263967287db/shop.js#L4).
 * On-ledger transfers for XRP will use [Interledger-over-XRP version 17q3](https://github.com/interledger/interledger/wiki/Interledger-over-XRP/16d6ad581ea29b510aeb937277bc691e497cf288)
