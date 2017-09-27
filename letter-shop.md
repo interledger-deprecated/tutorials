@@ -238,6 +238,7 @@ The plugin used in all three scripts exposes the Ledger Plugin Interface (LPI) a
 * `sendTransfer` method (in `pay.js` and `proxy.js`, prepares a transfer to some other account on the same ledger)
 * `getInfo` method (used in `pay.js` and `proxy.js` to fill in the `ledger` field to pass to `sendTransfer`)
 * `getAccount` method (used in `pay.js` and `proxy.js` to fill in the `from` field to pass to `sendTransfer`)
+* `rejectIncomingTransfer` method (in `shop.js`, rejects an incoming transfer if someone tries to pay the wrong amount)
 * `fulfillCondition` method (in `shop.js`, fulfills the condition of an incoming transfer)
 * `incoming_prepare` event (in `shop.js`, is triggered when someone else sends you a conditional transfer)
 * `outgoing_fulfill` event (in `pay.js` and `proxy.js`, is triggered when someone else fulfills your conditional transfer)
