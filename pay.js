@@ -1,5 +1,11 @@
+const IlpPacket = require('ilp-packet')
 const Plugin = require('ilp-plugin-xrp-escrow')
 const uuid = require('uuid/v4')
+function base64url (buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') }
+
+const destinationAddress = process.argv[2]
+const destinationAmount = process.argv[3]
+const condition = process.argv[4]
 
 const plugin = new Plugin({
   secret: 'sndb5JDdyWiHZia9zv44zSr2itRy1',
@@ -14,7 +20,7 @@ function sendTransfer (obj) {
   // to
   obj.ledger = plugin.getInfo().prefix
   // amount
-  obj.ilp = 'AA'
+  obj.ilp = base64url(IlpPacket.serializeIlpPayment({ amount: obj.amount, account: obj.to }))
   // executionCondition
   obj.expiresAt = new Date(new Date().getTime() + 1000000).toISOString()
   return plugin.sendTransfer(obj)
@@ -28,9 +34,9 @@ plugin.connect().then(function () {
   })
 
   sendTransfer({
-    to: process.argv[2],
-    amount: '1',
-    executionCondition: process.argv[3]
+    to: destinationAddress,
+    amount: destinationAmount,
+    executionCondition: condition
   }).then(function () {
     console.log('transfer prepared, waiting for fulfillment...')
   }, function (err) {

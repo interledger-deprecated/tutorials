@@ -13,7 +13,7 @@
 * the Ledger Plugin Interface (LPI)
 * how to build a paid web app using Interledger!
 
-## Step 1:
+## Step 1: Creating the Letter Shop
 
 Save the following JavaScript as `shop.js`:
 
@@ -21,7 +21,7 @@ Save the following JavaScript as `shop.js`:
 const http = require('http')
 const crypto = require('crypto')
 const Plugin = require('ilp-plugin-xrp-escrow')
-function base64 (buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') }
+function base64url (buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') }
 
 let fulfillments = {}
 let letters = {}
@@ -35,7 +35,21 @@ const plugin = new Plugin({
 
 plugin.connect().then(function () {
   plugin.on('incoming_prepare', function (transfer) {
-    plugin.fulfillCondition(transfer.id, fulfillments[transfer.executionCondition]).catch(function () {})
+    if (transfer.amount !== '10') {
+      plugin.rejectIncomingTransfer(transfer.id, {
+        code: 'F04',
+        name: 'Insufficient Destination Amount',
+        message: 'Please send exactly 10 drops, you sent ' + transfer.amount,
+        triggered_by: plugin.getAccount(),
+        triggered_at: new Date().toISOString(),
+        forwarded_by: [],
+        additional_info: {}
+      })
+    } else {
+      // the ledger will check if the fulfillment is correct and if it was submitted before the transfer's
+      // rollback timeout
+      plugin.fulfillCondition(transfer.id, fulfillments[transfer.executionCondition]).catch(function () {})
+    }
   })
 
   http.createServer(function (req, res) {
@@ -43,13 +57,13 @@ plugin.connect().then(function () {
       res.end('Your letter: ' + letters[req.url.substring(1)])
     } else {
       const secret = crypto.randomBytes(32)
-      const fulfillment = base64(secret)
-      const condition = base64(crypto.createHash('sha256').update(secret).digest())
+      const fulfillment = base64url(secret)
+      const condition = base64url(crypto.createHash('sha256').update(secret).digest())
       const letter = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ').split('')[(Math.floor(Math.random() * 26))]
       fulfillments[condition] = fulfillment
       letters[fulfillment] = letter
       console.log('Generated letter for visitor on ', req.url, { secret, fulfillment, condition, letter })
-      res.end('Please send an Interledger payment to ' + plugin.getAccount() + ' with condition ' + condition)
+      res.end('Please send an Interledger payment to ' + plugin.getAccount() + ' with amount 10 drops and condition ' + condition)
     }
   }).listen(8000)
 })
@@ -61,24 +75,34 @@ Set up a Letter Shop website on http://localhost:8000, by running:
 npm install michielbdejong/ilp-plugin-xrp-escrow#3fadeb4
 node shop.js
 ```
+
+### Interledger addresses
 In the code, you see that an 'ilp-plugin-xrp-escrow' Plugin is being configured with secret, account, server, and prefix.
 The first three come from the [XRP Testnet Faucet](https://ripple.com/build/xrp-test-net/). The prefix is an Interledger prefix, which is like an [IP subnet](https://en.wikipedia.org/wiki/Subnetwork). In this case, `test.` indicates that we are connecting to the Interledger testnet-of-testnet. The next part, `crypto.` indicates that we will be referring to a crypto currency's ledger. And finally, `xrp.` indicates that this ledger is the XRP testnet ledger. If you know the ledger prefix and the account, you can put them together to get the Interledger Address (see [IL-RFC-15, draft 1](https://interledger.org/rfcs/0015-ilp-addresses/draft-1.html)). In this case, the Interledger address of our Letter Shop is `test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW`.
 
+### Prepare and Fulfill with on-ledger Escrow
 The plugin used here is specific to XRP, and to the use of on-ledger escrow. Escrow for XRP is described [here](https://ripple.com/build/rippleapi/#transaction-types). Escrow transfers differ from normal transfer in that the recipient doesn't automatically receive the amount of the transfer in their account; the need to produce something in order to claim the funds. During the time between the sender's action of preparing the transfer (creating the escrow), and the time the recipient produces the fulfillment for the transfer's condition, the money is on hold on the ledger. If the recipient doesn't produce the fulfillment in time, the transaction is canceled, and the money goes back into the sender's account.
 
+### Hash Time Lock Agreements
 In the case of Interledger, the fulfillment is always a 32-byte string, and the condition is the sha256 hash of that string.
-SHA256 is a one-way hash function, so if you know `fulfillment`, then it's easy and quick to calculate `condition = sha256(fulfillment)`, but if you only know the condition, if you only have a million years or less, it's near-impossible to find (i.e., guess) a fulfillment for which `condition = sha256(fulfillment)` would hold. And in practice, we tend to use rollback timeouts that are of course much shorter! :) Because the transfer is *locked* until the recipient produces the correct fulfillment, the condition of the transfer is a *hash* of its fulfillment, and the transfer will *time* out after a while if the recipient doesn't produce the fulfillment to claim the funds, we call this type of conditional transfer a *Hash Time Lock Contract (HTLC)*. We call this a contract between sender an recipient, that is enforced by the ledger. If the sender and the recipient would exchange the condition and the fulfillment directly, that would be an off-ledger transaction, and instead of a Hash Time Lock Contract, we would use the more general term Hash Time Lock Agreement, to indicate that the interaction happens without having the ledger as an arbitor.
+SHA256 is a one-way hash function, so if you know `fulfillment`, then it's easy and quick to calculate `condition = sha256(fulfillment)`, but if you only know the condition, if you only have a million years or less, it's near-impossible to find (i.e., guess) a fulfillment for which `condition = sha256(fulfillment)` would hold. And in practice, we tend to use rollback timeouts that are of course much shorter! :) Because the transfer is *locked* until the recipient produces the correct fulfillment, the condition of the transfer is a *hash* of its fulfillment, and the transfer will *time* out after a while if the recipient doesn't produce the fulfillment to claim the funds, we call this type of conditional transfer a *Hash Time Lock Contract (HTLC)*. We call this a contract between sender an recipient, that is enforced by the ledger. If the sender and the recipient would exchange the condition and the fulfillment directly, that would be an off-ledger transaction, and instead of a Hash Time Lock Contract, we would use the more general term [Hash Time Lock Agreement](https://interledger.org/rfcs/0022-hashed-timelock-agreements/draft-1.html), to indicate that the interaction happens without having the ledger as an arbitor.
 
-## Paying for your letter
+## Step 2: Paying for your letter
 Visit http://localhost:8000. You'll see something like:
 ```txt
-Please send an Interledger payment to test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW with condition A6-zI1uIEtjOXMTDoZLtML1xj6YPxBA6yxIQyVh4qhE
+Please send an Interledger payment to test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW with amount 10 drops and condition nhPJyYh-KkZSMHz8dfOQZAmCRAGnO39b0iFwV5qOmOA
 ```
 
 Save the following script as `pay.js`:
 ```js
+const IlpPacket = require('ilp-packet')
 const Plugin = require('ilp-plugin-xrp-escrow')
 const uuid = require('uuid/v4')
+function base64url (buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') }
+
+const destinationAddress = process.argv[2]
+const destinationAmount = process.argv[3]
+const condition = process.argv[4]
 
 const plugin = new Plugin({
   secret: 'sndb5JDdyWiHZia9zv44zSr2itRy1',
@@ -93,7 +117,7 @@ function sendTransfer (obj) {
   // to
   obj.ledger = plugin.getInfo().prefix
   // amount
-  obj.ilp = 'AA'
+  obj.ilp = base64url(IlpPacket.serializeIlpPayment({ amount: obj.amount, account: obj.to }))
   // executionCondition
   obj.expiresAt = new Date(new Date().getTime() + 1000000).toISOString()
   return plugin.sendTransfer(obj)
@@ -107,9 +131,9 @@ plugin.connect().then(function () {
   })
 
   sendTransfer({
-    to: process.argv[2],
-    amount: '1',
-    executionCondition: process.argv[3]
+    to: destinationAddress,
+    amount: destinationAmount,
+    executionCondition: condition
   }).then(function () {
     console.log('transfer prepared, waiting for fulfillment...')
   }, function (err) {
@@ -120,7 +144,7 @@ plugin.connect().then(function () {
 
 Now run, something like the following, (put the condition from your own shop's local website as the second argument):
 ```sh
-$ node ./pay.js test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW A6-zI1uIEtjOXMTDoZLtML1xj6YPxBA6yxIQyVh4qhE
+$ node ./pay.js test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW 10 nhPJyYh-KkZSMHz8dfOQZAmCRAGnO39b0iFwV5qOmOA
 ```
 
 Now wait for about 30 seconds, until you see something like:
@@ -130,14 +154,16 @@ Got the fulfillment, you paid for your letter! Go get it at http://localhost:800
 
 As the instructions say, visit that URL to get your letter! :)
 
-## Paying proxy
+## Step 3: Paying proxy
 
 It's of course very cumbersome to cut and paste the condition from your browser to your command-line terminal each time you need to pay for something online, and then to cut and past back the fulfillment from your terminal to your browser once you paid. Therefore, the following paying proxy is useful, which parses the shop's payment instructions, executes them, retreives the paid content, and serves it on port 8001. Save it as `proxy.js`:
 ```js
+const IlpPacket = require('ilp-packet')
 const Plugin = require('ilp-plugin-xrp-escrow')
 const http = require('http')
 const fetch = require('node-fetch')
 const uuid = require('uuid/v4')
+function base64url (buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') }
 
 const plugin = new Plugin({
   secret: 'sndb5JDdyWiHZia9zv44zSr2itRy1',
@@ -154,7 +180,7 @@ function sendTransfer (obj) {
   // to
   obj.ledger = plugin.getInfo().prefix
   // amount
-  obj.ilp = 'AA'
+  obj.ilp = base64url(IlpPacket.serializeIlpPayment({ amount: obj.amount, account: obj.to }))
   // executionCondition
   obj.expiresAt = new Date(new Date().getTime() + 1000000).toISOString()
   return plugin.sendTransfer(obj).then(function () {
@@ -177,11 +203,13 @@ plugin.connect().then(function () {
       return inRes.text()
     }).then(function (body) {
       const parts = body.split(' ')
+      // Please send an Interledger payment to test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW with amount 10 drops and condition Z8_mOwUpkAvI-DTGMKQ_kfCIh7QgcYGu0uuFgloGVr4
+      // 0      1    2  3           4       5  6                                                  7    8      9  10    11  12        13
       if (parts[0] === 'Please') {
         sendTransfer({
           to: parts[6],
-          amount: '1',
-          executionCondition: parts[9]
+          amount: parts[9],
+          executionCondition: parts[13]
         }).then(function (transferId) {
           console.log('transfer sent', transferId)
           pendingRes[transferId] = outRes
@@ -224,5 +252,3 @@ forget some of them.
 * ledger prefix
 * Interledger address
 * Ledger Plugin Interface, and some of its methods
-
-

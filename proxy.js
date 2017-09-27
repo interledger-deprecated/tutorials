@@ -1,7 +1,9 @@
+const IlpPacket = require('ilp-packet')
 const Plugin = require('ilp-plugin-xrp-escrow')
 const http = require('http')
 const fetch = require('node-fetch')
 const uuid = require('uuid/v4')
+function base64url (buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') }
 
 const plugin = new Plugin({
   secret: 'sndb5JDdyWiHZia9zv44zSr2itRy1',
@@ -18,7 +20,7 @@ function sendTransfer (obj) {
   // to
   obj.ledger = plugin.getInfo().prefix
   // amount
-  obj.ilp = 'AA'
+  obj.ilp = base64url(IlpPacket.serializeIlpPayment({ amount: obj.amount, account: obj.to }))
   // executionCondition
   obj.expiresAt = new Date(new Date().getTime() + 1000000).toISOString()
   return plugin.sendTransfer(obj).then(function () {
@@ -41,11 +43,13 @@ plugin.connect().then(function () {
       return inRes.text()
     }).then(function (body) {
       const parts = body.split(' ')
+      // Please send an Interledger payment to test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW with amount 10 drops and condition Z8_mOwUpkAvI-DTGMKQ_kfCIh7QgcYGu0uuFgloGVr4
+      // 0      1    2  3           4       5  6                                                  7    8      9  10    11  12        13
       if (parts[0] === 'Please') {
         sendTransfer({
           to: parts[6],
-          amount: '1',
-          executionCondition: parts[9]
+          amount: parts[9],
+          executionCondition: parts[13]
         }).then(function (transferId) {
           console.log('transfer sent', transferId)
           pendingRes[transferId] = outRes
