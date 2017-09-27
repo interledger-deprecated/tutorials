@@ -142,7 +142,7 @@ plugin.connect().then(function () {
 })
 ```
 
-Now run, something like the following, (put the condition from your own shop's local website as the second argument):
+Now run, something like the following, (put the condition from your own shop's local website as the last argument):
 ```sh
 $ node ./pay.js test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW 10 nhPJyYh-KkZSMHz8dfOQZAmCRAGnO39b0iFwV5qOmOA
 ```
