@@ -62,7 +62,7 @@ npm install michielbdejong/ilp-plugin-xrp-escrow#3fadeb4
 node shop.js
 ```
 In the code, you see that an 'ilp-plugin-xrp-escrow' Plugin is being configured with secret, account, server, and prefix.
-The first three come from the [XRP Testnet Faucet](https://ripple.com/build/xrp-test-net/). The prefix is an Interledger prefix, which is like an [IP subnet](https://en.wikipedia.org/wiki/Subnetwork). In this case, `test.` indicates that we are connecting to the Interledger testnet-of-testnet. The next part, `crypto.` indicates that we will be referring to a crypto currency's ledger. And finally, `xrp.` indicates that this ledger is the XRP testnet ledger. If you know the ledger prefix and the account, you can put them together to get the [Interledger Address](https://interledger.org/rfcs/0015-ilp-addresses/draft-1.html). In this case, the Interledger address of our Letter Shop is `test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW`.
+The first three come from the [XRP Testnet Faucet](https://ripple.com/build/xrp-test-net/). The prefix is an Interledger prefix, which is like an [IP subnet](https://en.wikipedia.org/wiki/Subnetwork). In this case, `test.` indicates that we are connecting to the Interledger testnet-of-testnet. The next part, `crypto.` indicates that we will be referring to a crypto currency's ledger. And finally, `xrp.` indicates that this ledger is the XRP testnet ledger. If you know the ledger prefix and the account, you can put them together to get the Interledger Address (see [IL-RFC-15, draft 1](https://interledger.org/rfcs/0015-ilp-addresses/draft-1.html)). In this case, the Interledger address of our Letter Shop is `test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW`.
 
 The plugin used here is specific to XRP, and to the use of on-ledger escrow. Escrow for XRP is described [here](https://ripple.com/build/rippleapi/#transaction-types). Escrow transfers differ from normal transfer in that the recipient doesn't automatically receive the amount of the transfer in their account; the need to produce something in order to claim the funds. During the time between the sender's action of preparing the transfer (creating the escrow), and the time the recipient produces the fulfillment for the transfer's condition, the money is on hold on the ledger. If the recipient doesn't produce the fulfillment in time, the transaction is canceled, and the money goes back into the sender's account.
 
@@ -94,10 +94,8 @@ function sendTransfer (obj) {
   obj.ledger = plugin.getInfo().prefix
   // amount
   obj.ilp = 'AA'
-  obj.noteToSelf = {}
   // executionCondition
   obj.expiresAt = new Date(new Date().getTime() + 1000000).toISOString()
-  obj.custom = {}
   return plugin.sendTransfer(obj)
 }
 
@@ -157,10 +155,8 @@ function sendTransfer (obj) {
   obj.ledger = plugin.getInfo().prefix
   // amount
   obj.ilp = 'AA'
-  obj.noteToSelf = {}
   // executionCondition
   obj.expiresAt = new Date(new Date().getTime() + 1000000).toISOString()
-  obj.custom = {}
   return plugin.sendTransfer(obj).then(function () {
     return obj.id
   })
@@ -210,7 +206,7 @@ and instead of visiting http://localhost:8000/, visit http://localhost:8001/ - y
 
 ## Concepts learned
 
-The plugin used in all three scripts exposes the [Ledger Plugin Interface (LPI)](https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-5.html), and of that, this script uses the following methods and events:
+The plugin used in all three scripts exposes the Ledger Plugin Interface (LPI) as described in [IL-RPC-4, draft 6](https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-6.html), and of that, this script uses the following methods and events:
 * `sendTransfer` method (in `pay.js` and `proxy.js`, prepares a transfer to some other account on the same ledger)
 * `getInfo` method (used in `pay.js` and `proxy.js` to fill in the `ledger` field to pass to `sendTransfer`)
 * `getAccount` method (used in `pay.js` and `proxy.js` to fill in the `from` field to pass to `sendTransfer`)
@@ -218,7 +214,7 @@ The plugin used in all three scripts exposes the [Ledger Plugin Interface (LPI)]
 * `incoming_prepare` event (in `shop.js`, is triggered when someone else sends you a conditional transfer)
 * `outgoing_fulfill` event (in `pay.js` and `proxy.js`, is triggered when someone else fulfills your conditional transfer)
 
-If you read the paragraphs above, you will have seen the following new words; see the [glossary](https://interledger.org/rfcs/0019-glossary/) as a reference if you
+If you read the paragraphs above, you will have seen the following new words; see the glossary in [IL-RFC-19, draft 1](https://interledger.org/rfcs/0019-glossary/draft-1.html) as a reference if you
 forget some of them.
 
 * transfer

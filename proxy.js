@@ -19,10 +19,8 @@ function sendTransfer (obj) {
   obj.ledger = plugin.getInfo().prefix
   // amount
   obj.ilp = 'AA'
-  obj.noteToSelf = {}
   // executionCondition
   obj.expiresAt = new Date(new Date().getTime() + 1000000).toISOString()
-  obj.custom = {}
   return plugin.sendTransfer(obj).then(function () {
     return obj.id
   })
