@@ -12,8 +12,6 @@ const plugin = new Plugin({
   prefix: 'test.crypto.xrp.'
 })
 
-const pendingRes = {}
-
 function sendTransfer (obj) {
   obj.id = uuid()
   obj.from = plugin.getAccount()
@@ -29,30 +27,31 @@ function sendTransfer (obj) {
 }
 
 plugin.connect().then(function () {
-  plugin.on('outgoing_fulfill', function (transfer, fulfillment) {
-    console.log('outgoing fulfill', transfer, fulfillment, 'http://localhost:8000/' + fulfillment)
-    fetch('http://localhost:8000/' + fulfillment).then(function (inRes) {
-      return inRes.text()
-    }).then(function (body) {
-      pendingRes[transfer.id].end(body)
-    })
-  })
-
   http.createServer(function (req, outRes) {
     fetch('http://localhost:8000' + req.url).then(function (inRes) {
       return inRes.text()
     }).then(function (body) {
       const parts = body.split(' ')
-      // Please send an Interledger payment to test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW with amount 10 drops and condition Z8_mOwUpkAvI-DTGMKQ_kfCIh7QgcYGu0uuFgloGVr4
-      // 0      1    2  3           4       5  6                                                  7    8      9  10    11  12        13
+      // Please send an Interledger payment by running: node ./pay.js test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW 10 nhPJyYh-KkZSMHz8dfOQZAmCRAGnO39b0iFwV5qOmOA
+      // 0      1    2  3           4       5  6        7    8        9                                                  10 11
       if (parts[0] === 'Please') {
         sendTransfer({
-          to: parts[6],
-          amount: parts[9],
-          executionCondition: parts[13]
+          to: parts[9],
+          amount: parts[10],
+          executionCondition: parts[11]
         }).then(function (transferId) {
-          console.log('transfer sent', transferId)
-          pendingRes[transferId] = outRes
+          const listenerForThisTransfer = function (transfer, fulfillment) {
+            if (transfer.id === transferId) {
+              console.log('outgoing fulfill', transfer, fulfillment, 'http://localhost:8000/' + fulfillment)
+              fetch('http://localhost:8000/' + fulfillment).then(function (inRes) {
+                return inRes.text()
+              }).then(function (body) {
+                outRes.end(body)
+                plugin.removeListener('outgoing_fulfill', listenerForThisTransfer)
+              })
+            }
+          }
+          plugin.addListener('outgoing_fulfill', listenerForThisTransfer)
         }, function (err) {
           console.error(err.message)
         })

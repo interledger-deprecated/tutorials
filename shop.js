@@ -43,7 +43,7 @@ plugin.connect().then(function () {
       fulfillments[condition] = fulfillment
       letters[fulfillment] = letter
       console.log('Generated letter for visitor on ', req.url, { secret, fulfillment, condition, letter })
-      res.end('Please send an Interledger payment to ' + plugin.getAccount() + ' with amount 10 drops and condition ' + condition)
+      res.end('Please send an Interledger payment by running: node ./pay.js ' + plugin.getAccount() + ' 10 ' + condition)
     }
   }).listen(8000)
 })
