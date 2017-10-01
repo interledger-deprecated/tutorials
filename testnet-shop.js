@@ -6,9 +6,12 @@ function base64url (buf) { return buf.toString('base64').replace(/\+/g, '-').rep
 let fulfillments = {}
 let letters = {}
 
+const BTP_VERSION_ALPHA = 0
+// const BTP_VERSION_1 = 1
+
 const plugin = new Plugin({
-  btpUri: 'btp+wss://fa9Eghohgeikaithihie:Iegah6faideiR9aenaax@oamundsen.michielbdejong.com/api/17q3',
-  btpVersion: 'btp/alpha'
+  btpUri: 'btp+wss://fa9Eghohgeikaithihie:Iegah6faideiR9aenaax@amundsen.michielbdejong.com/api/17q3',
+  btpVersion: BTP_VERSION_ALPHA
 })
 
 plugin.connect().then(function () {
@@ -41,7 +44,7 @@ plugin.connect().then(function () {
       fulfillments[condition] = fulfillment
       letters[fulfillment] = letter
       console.log('Generated letter for visitor on ', req.url, { secret, fulfillment, condition, letter })
-      res.end('Please send an Interledger payment by running: node ./pay.js ' + plugin.getAccount() + ' 10 ' + condition)
+      res.end('Please send an Interledger payment by running: node ./testnet-pay.js ' + plugin.getAccount() + ' 10 ' + condition)
     }
   }).listen(8000)
 })
