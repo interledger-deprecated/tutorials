@@ -33,7 +33,10 @@ plugin.connect().then(function () {
     }
   })
 
+  console.log('plugin connected, starting web server')
+
   http.createServer(function (req, res) {
+    console.log('request', req.url)
     if (letters[req.url.substring(1)]) {
       res.end('Your letter: ' + letters[req.url.substring(1)])
     } else {
@@ -47,4 +50,5 @@ plugin.connect().then(function () {
       res.end('Please send an Interledger payment by running: node ./testnet-pay.js ' + plugin.getAccount() + ' 10 ' + condition)
     }
   }).listen(8000)
+  console.log('web server started')
 })
