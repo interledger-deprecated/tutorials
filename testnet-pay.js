@@ -1,5 +1,5 @@
 const IlpPacket = require('ilp-packet')
-const Plugin = require('ilp-plugin-xrp-escrow')
+const Plugin = require('ilp-plugin-btp-client')
 const uuid = require('uuid/v4')
 function base64url (buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') }
 
@@ -7,13 +7,15 @@ const destinationAddress = process.argv[2]
 const destinationAmount = process.argv[3]
 const condition = process.argv[4]
 
-const AMUNDSEN_ON_XRP = 'test.crypto.xrp.rhjRdyVNcaTNLXp3rkK4KtjCdUd9YEgrPs'
+let fulfillments = {}
+let letters = {}
+
+const BTP_VERSION_ALPHA = 0
+// const BTP_VERSION_1 = 1
 
 const plugin = new Plugin({
-  secret: 'sndb5JDdyWiHZia9zv44zSr2itRy1',
-  account: 'rGtqDAJNTDMLaNNfq1RVYgPT8onFMj19Aj',
-  server: 'wss://s.altnet.rippletest.net:51233',
-  prefix: 'test.crypto.xrp.'
+  btpUri: 'btp+wss://xaidie5vubioTuFeepai:ne1loaYohloc7meiph6I@amundsen.michielbdejong.com/api/17q3',
+  btpVersion: BTP_VERSION_ALPHA
 })
 
 function sendTransfer (transfer, payment) {
@@ -35,9 +37,12 @@ plugin.connect().then(function () {
     plugin.disconnect()
     process.exit()
   })
-
+  
+  // const amundsen = 'test.amundsen.crypto.xrp.rhjRdyVNcaTNLXp3rkK4KtjCdUd9YEgrPs'
+  const amundsen = plugin.getInfo().connectors[0]
+  console.log('plugin connected, now sending transfer')
   sendTransfer({
-    to: AMUNDSEN_ON_XRP,
+    to: amundsen,
     amount: destinationAmount,
     executionCondition: condition
   }, {
