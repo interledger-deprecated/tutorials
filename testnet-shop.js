@@ -1,6 +1,6 @@
 const http = require('http')
 const crypto = require('crypto')
-const Plugin = require('../../michielbdejong/ilp-plugin-btp-client')
+const Plugin = require('ilp-plugin-btp-client')
 function base64url (buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') }
 
 let fulfillments = {}
