@@ -41,16 +41,19 @@ plugin.connect().then(function () {
   // const amundsen = 'test.amundsen.crypto.xrp.rhjRdyVNcaTNLXp3rkK4KtjCdUd9YEgrPs'
   const amundsen = plugin.getInfo().connectors[0]
   console.log('plugin connected, now sending transfer')
-  sendTransfer({
-    to: amundsen,
-    amount: destinationAmount,
-    executionCondition: condition
-  }, {
-    account: destinationAddress,
-    amount: destinationAmount,
-  }).then(function () {
-    console.log('transfer prepared, waiting for fulfillment...')
-  }, function (err) {
-    console.error(err.message)
-  })
+  setTimeout(() => {
+    console.log('waited!')
+    sendTransfer({
+      to: amundsen,
+      amount: destinationAmount,
+      executionCondition: condition
+    }, {
+      account: destinationAddress,
+      amount: destinationAmount,
+    }).then(function () {
+      console.log('transfer prepared, waiting for fulfillment...')
+    }, function (err) {
+      console.error(err.message)
+    })
+  }, 5000) // FIXME: not sure why this timeout is necessary
 })
