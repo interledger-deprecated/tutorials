@@ -35,6 +35,7 @@ plugin.connect().then(function () {
       // Please send an Interledger payment by running: node ./pay.js test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW 10 nhPJyYh-KkZSMHz8dfOQZAmCRAGnO39b0iFwV5qOmOA
       // 0      1    2  3           4       5  6        7    8        9                                                  10 11
       if (parts[0] === 'Please') {
+        // Payment required
         sendTransfer({
           to: parts[9],
           amount: parts[10],
@@ -56,6 +57,7 @@ plugin.connect().then(function () {
           console.error(err.message)
         })
       } else {
+        // No payment required (anymore):
         outRes.end(parts.join(' '))
       }
     })

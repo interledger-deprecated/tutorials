@@ -14,6 +14,8 @@ const plugin = new Plugin({
   prefix: 'test.crypto.xrp.'
 })
 
+// Fill in the required fields for
+// https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-7.html
 function sendTransfer (obj) {
   obj.id = uuid()
   obj.from = plugin.getAccount()
