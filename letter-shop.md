@@ -38,6 +38,9 @@ const Plugin = require('ilp-plugin-xrp-escrow')
 
 // [...]
 
+// A plugin is a piece of code that talks to a specific account on a specific ledger. In this case, we will be talking
+// to an account on the XRP testnet, using the 'ilp-plugin-xrp-escrow' plugin. All ILP plugin repositories on github start
+// with ['ilp-plugin-'](https://github.com/search?utf8=%E2%9C%93&q=ilp-plugin-).
 const plugin = new Plugin({
   secret: 'ssGjGT4sz4rp2xahcDj87P71rTYXo',
   account: 'rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW',
@@ -46,6 +49,8 @@ const plugin = new Plugin({
 })
 
 plugin.connect().then(function () {
+  // once the plugin is connected, listen for events; the 'incoming_prepare' event indicates an incoming
+  // conditional transfer.
   plugin.on('incoming_prepare', function (transfer) {
     if (transfer.amount !== '10') {
       plugin.rejectIncomingTransfer(transfer.id, {
@@ -81,6 +86,9 @@ function base64url (buf) { return buf.toString('base64').replace(/\+/g, '-').rep
 
 // [...]
 
+// Generate a preimage and its SHA256 hash,
+// which we'll use as the fulfillment and condition, respectively, of the
+// conditional transfer.
 const secret = crypto.randomBytes(32)
 const fulfillment = base64url(secret)
 const condition = base64url(crypto.createHash('sha256').update(secret).digest())
@@ -89,7 +97,7 @@ const condition = base64url(crypto.createHash('sha256').update(secret).digest())
 The plugin used here is specific to XRP, and to the use of on-ledger escrow. Escrow for XRP is described [here](https://ripple.com/build/rippleapi/#transaction-types). Escrow transfers differ from normal transfer in that the recipient doesn't automatically receive the amount of the transfer in their account; the need to produce something in order to claim the funds. During the time between the sender's action of preparing the transfer (creating the escrow), and the time the recipient produces the fulfillment for the transfer's condition, the money is on hold on the ledger. If the recipient doesn't produce the fulfillment in time, the transaction is canceled, and the money goes back into the sender's account.
 
 ### Hashlocks
-In the case of Interledger, the fulfillment is always a 32-byte string, and the condition is the sha256 hash of that string.
+In the case of Interledger, transfers are always conditional: first, they are "prepared", with a "condition". This condition is the sha256 hash of a "fulfillment". With that fulfillment, the transfer is later "executed". Condition and fulfillment are always 32 bytes each.
 SHA256 is a one-way hash function, so if you know `fulfillment`, then it's easy and quick to calculate `condition = sha256(fulfillment)`, but if you only know the condition, if you only have a million years or less, it's near-impossible to find (i.e., guess) a fulfillment for which `condition = sha256(fulfillment)` would hold. And in practice, we tend to use rollback timeouts that are of course much shorter! :) Because the transfer is *locked* until the recipient produces the correct fulfillment, the condition of the transfer is a *hash* of its fulfillment, we call this a *hashlock*.
 
 ## Step 2: Paying for your letter
@@ -107,20 +115,9 @@ As the instructions say, visit that URL to get your letter! :)
 
 ### Sending transfers
 
-To send an Interledger payment, call the `sendTransfer` method of any connected Interledger plugin:
+To send an Interledger payment, call the `plugin.sendTransfer` method of any connected Interledger plugin:
 
 ```js
-function sendTransfer (obj) {
-  obj.id = uuid()
-  obj.from = plugin.getAccount()
-  // to
-  obj.ledger = plugin.getInfo().prefix
-  // amount
-  obj.ilp = base64url(IlpPacket.serializeIlpPayment({ amount: obj.amount, account: obj.to }))
-  // executionCondition
-  obj.expiresAt = new Date(new Date().getTime() + 1000000).toISOString()
-  return plugin.sendTransfer(obj)
-}
 
 plugin.connect().then(function () {
   plugin.on('outgoing_fulfill', function (transferId, fulfillment) {
@@ -129,10 +126,17 @@ plugin.connect().then(function () {
     process.exit()
   })
 
-  sendTransfer({
+  // Fill in the required fields for
+  // https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-7.html
+  plugin.sendTransfer({
     to: destinationAddress,
     amount: destinationAmount,
-    executionCondition: condition
+    executionCondition: condition,
+    id: uuid(),
+    from: plugin.getAccount(),
+    ledger: plugin.getInfo().prefix,
+    ilp: base64url(IlpPacket.serializeIlpPayment({ amount: destinationAmount, account: destinationAddress })),
+    expiresAt = new Date(new Date().getTime() + 1000000).toISOString()
   }).then(function () {
     console.log('transfer prepared, waiting for fulfillment...')
   }, function (err) {
@@ -161,6 +165,7 @@ const parts = body.split(' ')
 // Please send an Interledger payment by running: node ./pay.js test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW 10 nhPJyYh-KkZSMHz8dfOQZAmCRAGnO39b0iFwV5qOmOA
 // 0      1    2  3           4       5  6        7    8        9                                                  10 11
 if (parts[0] === 'Please') {
+  // Payment required
   sendTransfer({
     to: parts[9],
     amount: parts[10],

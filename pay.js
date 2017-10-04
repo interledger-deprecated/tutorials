@@ -14,20 +14,6 @@ const plugin = new Plugin({
   prefix: 'test.crypto.xrp.'
 })
 
-// Fill in the required fields for
-// https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-7.html
-function sendTransfer (obj) {
-  obj.id = uuid()
-  obj.from = plugin.getAccount()
-  // to
-  obj.ledger = plugin.getInfo().prefix
-  // amount
-  obj.ilp = base64url(IlpPacket.serializeIlpPayment({ amount: obj.amount, account: obj.to }))
-  // executionCondition
-  obj.expiresAt = new Date(new Date().getTime() + 1000000).toISOString()
-  return plugin.sendTransfer(obj)
-}
-
 plugin.connect().then(function () {
   plugin.on('outgoing_fulfill', function (transferId, fulfillment) {
     console.log('Got the fulfillment, you paid for your letter! Go get it at http://localhost:8000/' + fulfillment)
@@ -35,10 +21,17 @@ plugin.connect().then(function () {
     process.exit()
   })
 
-  sendTransfer({
+  // Fill in the required fields for
+  // https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-7.html
+  plugin.sendTransfer({
     to: destinationAddress,
     amount: destinationAmount,
-    executionCondition: condition
+    executionCondition: condition,
+    id: uuid(),
+    from: plugin.getAccount(),
+    ledger: plugin.getInfo().prefix,
+    ilp: base64url(IlpPacket.serializeIlpPayment({ amount: destinationAmount, account: destinationAddress })),
+    expiresAt = new Date(new Date().getTime() + 1000000).toISOString()
   }).then(function () {
     console.log('transfer prepared, waiting for fulfillment...')
   }, function (err) {
