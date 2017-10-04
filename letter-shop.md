@@ -3,7 +3,7 @@
 ## What you need before you start:
 
 * a laptop with an internet connection
-* have NodeJS installed
+* have NodeJS version 7 or higher installed
 * (optional) have git installed
 * basic knowledge of the command line terminal
 * basic knowledge of JavaScript, including Promises and Buffers
@@ -22,7 +22,7 @@ if you prefer to download the code as a zip file, you can just visit that URL wi
 browser, click 'Clone or Download'. On that URL you can also browse the JavaScript files
 online without downloading them.
 
-Assuming you now either cloned the repository, or unzipped, your download, with your command
+Assuming you now either cloned the repository, or unzipped your download, with your command
 line terminal, `cd` into the folder.
 
 Now you can get up a Letter Shop website on http://localhost:8000, by running:
@@ -33,6 +33,7 @@ node shop.js
 ```
 
 ### Interledger plugins
+Have a look at the first part of [`shop.js`](https://github.com/interledger/tutorials/blob/master/shop.js#L3-L38):
 ```js
 const Plugin = require('ilp-plugin-xrp-escrow')
 
@@ -81,6 +82,8 @@ Since Interledger connects potentially very different ledgers together, we need 
 The prefix is an Interledger prefix, which is like an [IP subnet](https://en.wikipedia.org/wiki/Subnetwork). In this case, `test.` indicates that we are connecting to the Interledger testnet-of-testnets. The next part, `crypto.` indicates that we will be referring to a crypto currency's ledger. And finally, `xrp.` indicates that this ledger is the XRP testnet ledger. If you know the ledger prefix and the account, you can put them together to get the Interledger Address (see [IL-RFC-15, draft 1](https://interledger.org/rfcs/0015-ilp-addresses/draft-1.html)). In this case, the Interledger address of our Letter Shop is `test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW`.
 
 ### Prepare and Fulfill with on-ledger Escrow
+The easiest way to understand cryptographic escrow is by looking at [`shop.js`, lines 45-50](https://github.com/interledger/tutorials/blob/master/shop.js#L45-L50):
+
 ```js
 function base64url (buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') }
 
@@ -98,7 +101,7 @@ The plugin used here is specific to XRP, and to the use of on-ledger escrow. Esc
 
 ### Hashlocks
 In the case of Interledger, transfers are always conditional: first, they are "prepared", with a "condition". This condition is the sha256 hash of a "fulfillment". With that fulfillment, the transfer is later "executed". Condition and fulfillment are always 32 bytes each.
-SHA256 is a one-way hash function, so if you know `fulfillment`, then it's easy and quick to calculate `condition = sha256(fulfillment)`, but if you only know the condition, if you only have a million years or less, it's near-impossible to find (i.e., guess) a fulfillment for which `condition = sha256(fulfillment)` would hold. And in practice, we tend to use rollback timeouts that are of course much shorter! :) Because the transfer is *locked* until the recipient produces the correct fulfillment, the condition of the transfer is a *hash* of its fulfillment, we call this a *hashlock*.
+SHA256 is a one-way hash function, so if you know `fulfillment`, then it's easy and quick to calculate `condition = sha256(fulfillment)`, but if you only know the condition, if you only have a million years or less, it's near-impossible to find (i.e., guess) a fulfillment for which `condition = sha256(fulfillment)` would hold. And in practice, we tend to use rollback timeouts that are of course much shorter! :) Because the transfer is *locked* until the recipient produces the correct fulfillment, and the condition of the transfer is a *hash* of its fulfillment, we call this a *hashlock*.
 
 ## Step 2: Paying for your letter
 Visit http://localhost:8000. You'll see something like:
@@ -115,10 +118,8 @@ As the instructions say, visit that URL to get your letter! :)
 
 ### Sending transfers
 
-To send an Interledger payment, call the `plugin.sendTransfer` method of any connected Interledger plugin:
-
+To send an Interledger payment, call the `plugin.sendTransfer` method of any connected Interledger plugin, have a look at [`pay.js`, lines 17-39](https://github.com/interledger/tutorials/blob/master/pay.js#L17-L39):
 ```js
-
 plugin.connect().then(function () {
   plugin.on('outgoing_fulfill', function (transferId, fulfillment) {
     console.log('Got the fulfillment, you paid for your letter! Go get it at http://localhost:8000/' + fulfillment)
@@ -136,7 +137,7 @@ plugin.connect().then(function () {
     from: plugin.getAccount(),
     ledger: plugin.getInfo().prefix,
     ilp: base64url(IlpPacket.serializeIlpPayment({ amount: destinationAmount, account: destinationAddress })),
-    expiresAt = new Date(new Date().getTime() + 1000000).toISOString()
+    expiresAt: new Date(new Date().getTime() + 1000000).toISOString()
   }).then(function () {
     console.log('transfer prepared, waiting for fulfillment...')
   }, function (err) {
@@ -144,11 +145,11 @@ plugin.connect().then(function () {
   })
 ```
 
-The `'outgoing_fulfill'` event will indicate that the payment was successful. See the [LPI spec](interledger.org/rfcs/0004-ledger-plugin-interface/) for more details.
+The `'outgoing_fulfill'` event will indicate that the payment was successful. See the [draft 7 of the LPI spec](https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-7.html) for more details.
 
 ## Step 3: Paying proxy
 
-It's of course very cumbersome to cut and paste the condition from your browser to your command-line terminal each time you need to pay for something online, and then to cut and past back the fulfillment from your terminal to your browser once you paid. Therefore, the following paying proxy is useful, which parses the shop's payment instructions, executes them, retreives the paid content, and serves it on port 8001. Run it with:
+It's of course very cumbersome to copy and paste the condition from your browser to your command-line terminal each time you need to pay for something online, and then to copy and paste back the fulfillment from your terminal to your browser once you paid. Therefore, the following paying proxy is useful, which parses the shop's human-readable payment instructions, executes them, retreives the paid content, and serves it on port 8001. Run it with:
 
 ```sh
 node ./shop.js # unless your shop was still running from before
@@ -158,7 +159,7 @@ and instead of visiting http://localhost:8000/, visit http://localhost:8001/ - y
 
 ### Pay, then fetch
 
-As you can see in the `proxy.js code:
+As you can see in [`proxy.js`, lines 34-47](https://github.com/interledger/tutorials/blob/master/proxy.js#L34-L47):
 
 ```js
 const parts = body.split(' ')

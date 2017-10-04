@@ -31,7 +31,7 @@ plugin.connect().then(function () {
     from: plugin.getAccount(),
     ledger: plugin.getInfo().prefix,
     ilp: base64url(IlpPacket.serializeIlpPayment({ amount: destinationAmount, account: destinationAddress })),
-    expiresAt = new Date(new Date().getTime() + 1000000).toISOString()
+    expiresAt: new Date(new Date().getTime() + 1000000).toISOString()
   }).then(function () {
     console.log('transfer prepared, waiting for fulfillment...')
   }, function (err) {
