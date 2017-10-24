@@ -10,12 +10,14 @@
 * using the `Pay` header in your shop and your client
 * using the ILP packet
 * streaming payments
+* deterministically picking a hashlock condition based on a Pre-Shared Key (PSK)
 
 ## The Pay Header
 
 We'll change the Letter Shop from the previous tutorial a bit, to `shop2.js`. Instead of
 using a human-readable "Payment Required" message that starts with "Please ...", we will
-now use a machine-readable http header, and a condition that is generated deterministically.
+now use a machine-readable http header, and a fulfillment/condition pair that is generated
+deterministically from a secret that's shared between the shop and the client.
 
 Starting with the last part, `http.createServer`, you can see the flow of the http server
 is a bit simpler; when a request comes in it sends headers, and
@@ -34,7 +36,7 @@ The `Pay` header contains 3 parts:
 
 * amount (in this case, the price of one letter, in XRP)
 * user-specific destination address
-* a Base64-encoded conditionSeed
+* a Base64-encoded shared secret for use with [PSK](https://interledger.org/rfcs/0016-pre-shared-key/draft-3.html)
 
 Note how we are appending `'.' + user` to the shop's Interledger address! This is a special feature of Interledger
 addresses, they can be subnetted endlessly, just add another `.` at the end to convert an account address
@@ -43,45 +45,33 @@ for letters, so by telling each user a different Interledger sub-address, we can
 
 When a transfer comes in, the server opens the [ILP packet](https://interledger.org/rfcs/0003-interledger-protocol/draft-4.html#ilp-payment-packet-format):
 ```js
-const ilpPacketContents = IlpPacket.deserializeIlpPayment(Buffer.from(transfer.ilp, 'base64'))
-// ...
-const fulfillment = hmac(secret, ilpPacketContents.account)
-const condition = hash(fulfillment)
-if (transfer.executionCondition === base64(condition)) {
-  // ...
-} else {
-  console.log('no match!', { secret, fulfillment, condition, transfer })
-}
+const ilpPacket = Buffer.from(transfer.ilp, 'base64')
+const ilpPacketContents = IlpPacket.deserializeIlpPayment(ilpPacket)
+const parts = ilpPacketContents.account.split('.')
+// 0: test, 1: crypto, 2: xrp, 3: rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW, 4: userId, 5: paymentId
 ```
 
 In there is a destination account and a destination amount, which will usually (if all went well) be equal
 to the amount of the transfer. In later tutorials, we will see how transfers can be chained together
 into one ILP payment, but for now, we will only use single-transfer payments.
 
-Whereas in the previous tutorial, the fulfillment was generated randomly, here it's generated deterministically from
-the combination of the shop's interledger address, the user's userId, this payment's paymentId, and the
-conditionSeed (as a buffer) that was sent to this user base64-encoded in the `Pay` header, for example:
+Instead of (like the Letter Shop from the previous tutorial did) remembering the random fulfillment strings
+to use, this version of the shop uses PSK to derive the exact fulfillment bytes from the ILP packet and the
+shared secret which it previously sent to this user base64-encoded in the `Pay` header:
 
 ```js
-amount = '1'
-shopAddress = 'test.crypto.xrp.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW'
-userId = 'UUxOFrawp0A'
-conditionSeed = Buffer.from('Agli74z_HjSNuTE1rTIr7QCkzWdIA3QdKoPMYHhw1I4', 'base64')
-payHeader = [ amount, shopAddress + '.' + userId, base64(conditionSeed) ]
-paymentId = '1'
-paymentPacketContents = {
-  amount: payHeader[0],
-  account: payHeader[1] + '.' + paymentId,
-  data: ''
-}
-fulfillment = hmac(conditionSeed, paymentPacketContents.account)
-condition = sha256(fulfillment)
+const { secret, res } = users[parts[4]]
+const fulfillmentGenerator = hmac(secret, 'ilp_psk_condition')
+const fulfillment =  hmac(fulfillmentGenerator, ilpPacket)
+const condition = sha256(fulfillment)
+if (transfer.executionCondition === base64(condition)) {
+  // ...
 ```
 
-To run this new version of the shop, type this into your terminal:
+To run this new version of the shop, clone or download https://github.com/interledgerjs/tutorials, `cd` into that folder, and type this into your terminal:
 
 ```sh
-npm install ilp-packet
+npm install
 node ./shop2.js
 ```
 
@@ -111,18 +101,19 @@ plugin.connect().then(function () {
   console.log(payHeaderParts)
   // e.g. Pay: 1 test.crypto.xrp.asdfaqefq3f.26wrgevaew SkTcFTZCBKgP6A6QOUVcwWCCgYIP4rJPHlIzreavHdU
   setInterval(function () {
-    const ilpPacketContents = {
+    const ilpPacket = IlpPacket.serializeIlpPayment({
       account: payHeaderParts[1] + '.' + (++counter),
       amount: '1',
       data: ''
-    }
-    const fulfillment = hmac(Buffer.from(payHeaderParts[2], 'base64'), ilpPacketContents.account)
-    const condition = hash(fulfillment)
+    })
+    const fulfillmentGenerator = hmac(Buffer.from(payHeaderParts[2], 'base64'), 'ilp_psk_condition')
+    const fulfillment =  hmac(fulfillmentGenerator, ilpPacket)
+    const condition = sha256(fulfillment)
     sendTransfer({
       to: payHeaderParts[1],
       amount: '1',
       executionCondition: base64(condition),
-      ilp: base64(IlpPacket.serializeIlpPayment(ilpPacketContents))
+      ilp: base64(ilpPacket)
     }).then(function () {
       // console.log('transfer sent')
     }).catch(function (err) {
@@ -138,9 +129,11 @@ Try it out!
 $ node ./client.js
 ```
 
-After some startup time, you should see letters being printed.
+After some startup time, you should see one letter per 500ms being printed.
 
 ## What you learned
 
 We used the ILP packet for the first time, talked about connectors, payments as chains of transfers, and used
 the `Pay` header, so that the shop could request payment from the client that connects to it.
+We also saw how with PSK, endless fulfillment/condition pairs can be derived, while only having to share one single secret
+between the sender and the receiver of an Interledger payment.
