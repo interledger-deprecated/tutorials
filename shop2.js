@@ -3,7 +3,7 @@ const http = require('http')
 const crypto = require('crypto')
 const Plugin = require('ilp-plugin-xrp-escrow')
 function base64 (buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') }
-function hash (secret) { return crypto.createHash('sha256').update(secret).digest() }
+function sha256 (preimage) { return crypto.createHash('sha256').update(preimage).digest() }
 function hmac (secret, input) { return crypto.createHmac('sha256', secret).update(input).digest() }
 
 let users = {}
@@ -17,15 +17,17 @@ const plugin = new Plugin({
 
 plugin.connect().then(function () {
   plugin.on('incoming_prepare', function (transfer) {
-    const ilpPacketContents = IlpPacket.deserializeIlpPayment(Buffer.from(transfer.ilp, 'base64'))
+    const ilpPacket = Buffer.from(transfer.ilp, 'base64')
+    const ilpPacketContents = IlpPacket.deserializeIlpPayment(ilpPacket)
     const parts = ilpPacketContents.account.split('.')
     // 0: test, 1: crypto, 2: xrp, 3: rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW, 4: userId, 5: paymentId
     if (parts.length < 6 || typeof users[parts[4]] === 'undefined' || ilpPacketContents.amount !== transfer.amount) {
       plugin.rejectIncomingTransfer(transfer.id, {}).catch(function () {})
     } else {
       const { secret, res } = users[parts[4]]
-      const fulfillment = hmac(secret, ilpPacketContents.account)
-      const condition = hash(fulfillment)
+      const fulfillmentGenerator = hmac(secret, 'ilp_psk_condition')
+      const fulfillment =  hmac(fulfillmentGenerator, ilpPacket)
+      const condition = sha256(fulfillment)
       if (transfer.executionCondition === base64(condition)) {
         plugin.fulfillCondition(transfer.id, base64(fulfillment)).then(function () {
           const letter = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ').split('')[(Math.floor(Math.random() * 26))]
