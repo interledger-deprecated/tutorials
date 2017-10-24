@@ -49,7 +49,7 @@ plugin.connect().then(function () {
       to: payHeaderParts[1],
       amount: '1',
       executionCondition: base64(condition),
-      ilp: base64()
+      ilp: base64(ilpPacket)
     }).then(function () {
       // console.log('transfer sent')
     }).catch(function (err) {
