@@ -8,6 +8,7 @@ first time. The main programming language used is JavaScript.
 
 * [The Letter Shop](./letter-shop)
 * [Streaming Payments](./streaming-payments)
+* [Trustlines](./trustlines)
 
 ## Versioning
 
@@ -21,6 +22,8 @@ Interledger Requests For Comments (IL-RFCs):
 * [IL-RFC-15, draft 1](https://interledger.org/rfcs/0015-ilp-addresses/draft-1.html): Interledger Addresses
 * [IL-RFC-22, draft 1](https://interledger.org/rfcs/0022-hashed-timelock-agreements/draft-1.html): Hashed Time Lock Agreements
 * [IL-RFC-19, draft 1](https://interledger.org/rfcs/0019-glossary/draft-1.html): Glossary
+* [IL-RFC-16, draft 3](https://interledger.org/rfcs/0016-pre-shared-key/draft-3.html): Pre-Shared Key (PSK)
+* [IL-RFC-23, draft 2](https://interledger.org/rfcs/0023-bilateral-transfer-protocol/draft-2.html): Bilateral Transfer Protocol (BTP)
 
 The software you will build during these tutorials will be compatible with software
 written by other developers, on several levels:

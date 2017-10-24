@@ -7,7 +7,7 @@
 ## What you'll learn:
 
 * how to use trustlines to speed things up
-* Bilateral Transfer Protocol (BTP) and its relation to ILP
+* [Bilateral Transfer Protocol (BTP)](https://interledger.org/rfcs/0023-bilateral-transfer-protocol/draft-2.html) and its relation to ILP
 
 ## Using a trustline
 
@@ -24,9 +24,9 @@ other party in the form of a 'PREPARE' packet, and both parties can also fulfill
 although they are a bit more concise, and before they go onto the WebSocket, they are serialized into OER buffers.
 An ILP sender can be a BTP server, and an ILP receiver can be a BTP client. So apart from (ILP-)sending (BTP-)clients,
 we can have receiving clients, sending servers, and receiving servers.
-To learn more about the BTP protocol, read [the BTP spec](https://github.com/interledger/rfcs/pull/300).
+To learn more about the BTP protocol, read [the BTP spec](https://interledger.org/rfcs/0023-bilateral-transfer-protocol/draft-2.html).
 
-Thanks to the plugin architeture, we have to change surprisingly little to switch from XRP to BTP: we just include the
+Thanks to the plugin architecture, we have to change surprisingly little to switch from XRP to BTP: we just include the
 `'ilp-plugin-payment-channel-framework'` plugin instead of the `'ilp-plugin-xrp-escrow'` one, and give it the config options
 it needs. You can see that here in the `shop3.js` script, which includes the BTP-enabled ledger; run `diff shop2.js shop3.js`
 to see how similar they really are; `shop3.js` uses a different plugin:
