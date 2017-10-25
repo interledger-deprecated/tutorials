@@ -24,6 +24,7 @@ Interledger Requests For Comments (IL-RFCs):
 * [IL-RFC-19, draft 1](https://interledger.org/rfcs/0019-glossary/draft-1.html): Glossary
 * [IL-RFC-16, draft 3](https://interledger.org/rfcs/0016-pre-shared-key/draft-3.html): Pre-Shared Key (PSK)
 * [IL-RFC-23, draft 2](https://interledger.org/rfcs/0023-bilateral-transfer-protocol/draft-2.html): Bilateral Transfer Protocol (BTP)
+* [rfcs PR #319](https://github.com/interledger/rfcs/pull/319): Simplified http-ilp flow
 
 The software you will build during these tutorials will be compatible with software
 written by other developers, on several levels:
