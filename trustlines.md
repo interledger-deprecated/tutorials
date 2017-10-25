@@ -14,16 +14,21 @@
 Getting one letter per 500ms is not very fast. It would be nice if we could stream the money faster, so that
 the content arrives faster! For this, we can add a ledger to the shop. The client opens an account on this ledger,
 and then pays for letters from its account at the shop's ledger, which will be much faster
-than paying via the XRP ledger.
+than paying via the XRP ledger. We call such a private ledger (which doesn't involve a trusted third party) a "trustline".
+
+There are two types of trustline, symmetrical and asymmetrical:
+
+> An asymmetrical trustline is a ledger with two account holders, and one of them is also the ledger administrator.
+
+> A symmetrical trustline is a ledger with two account holders, who collaborate on an equal basis to administer the ledger between them.
 
 The shop's ledger will expose the Bilateral Transfer Protocol (BTP), which is an optimization of the Ledger Plugin Interface (LPI)
-that we already saw in the Letter Shop tutorial. It is symmetrical over a WebSocket, so the client can send the same messages as the
-server, and this will have the same effect, but in the opposite direction. For instance, both parties can send a transfer to the
-other party in the form of a 'PREPARE' packet, and both parties can also fulfill transfers from the other party by sending a
-'FULFILL' packet. These BTP packets are similar to the objects passed to `plugin.sendTransfer` or `plugin.fulfillCondition`,
+that we already saw in the Letter Shop tutorial, transported over a WebSocket.
+These BTP packets are similar to the objects passed to `plugin.sendTransfer` or `plugin.fulfillCondition`,
 although they are a bit more concise, and before they go onto the WebSocket, they are serialized into OER buffers.
-An ILP sender can be a BTP server, and an ILP receiver can be a BTP client. So apart from (ILP-)sending (BTP-)clients,
-we can have receiving clients, sending servers, and receiving servers.
+
+Once a BTP connection has been established between two peers, ILP payments can move back and forth over it in both directions.
+In our case though, the ILP receiver (the shop) will be a BTP server, and the ILP sender will be a BTP client.
 To learn more about the BTP protocol, read [the BTP spec](https://interledger.org/rfcs/0023-bilateral-transfer-protocol/draft-2.html).
 
 Thanks to the plugin architecture, we have to change surprisingly little to switch from XRP to BTP: we just include the
