@@ -1,7 +1,11 @@
 const IlpPacket = require('ilp-packet')
 const plugin = require('./plugins.js').xrp.Customer()
 const uuid = require('uuid/v4')
-function base64url (buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') }
+
+function base64url (buf) {
+  return buf.toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
 
 const destinationAddress = process.argv[2]
 const destinationAmount = process.argv[3]
@@ -18,9 +22,10 @@ plugin.connect().then(function () {
   console.log(`    -- Currency: ${ledgerInfo.currencyCode}`)
   console.log(`    -- CurrencyScale: ${ledgerInfo.currencyScale}`)
 
-  console.log(` 2. Making payment to ${destinationAddress} using condition: ${condition}`)
+  console.log(` 2. Making payment to ${destinationAddress} ` +
+                                        `using condition: ${condition}`)
 
-  //Send the transfer
+  // Send the transfer
   plugin.sendTransfer({
     to: destinationAddress,
     amount: destinationAmount,
@@ -39,12 +44,12 @@ plugin.connect().then(function () {
     console.error(err.message)
   })
 
-  //Handle fulfillments
+  // Handle fulfillments
   plugin.on('outgoing_fulfill', function (transferId, fulfillment) {
     console.log(`    - Transfer executed. Got fulfillment: ${fulfillment}`)
-    console.log(` 3. Collect your letter at http://localhost:8000/${fulfillment}`)
+    console.log(` 3. Collect your letter at ` +
+                                    `http://localhost:8000/${fulfillment}`)
     plugin.disconnect()
     process.exit()
   })
-
 })
