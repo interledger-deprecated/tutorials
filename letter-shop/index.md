@@ -46,8 +46,8 @@ Once we have completed the tutorial the server will perform the following steps:
 1. Connect to an account and monitor it for incoming payments
 1. Start a web server to accept letter requests
 1. Process a request, store the result, and provide the customer with details of how to pay for the request and get the result
-1. Process an incoming payment related to a previous request, and provide payer with details of how to perform request again using proof-of-payment token
-1. Process a request with an attached proof-of-payment token, and return the originally generated result
+1. Process an incoming payment related to a previous request, and provide payer with the data required to perform request again using a proof-of-payment token
+1. Process a request containing a proof-of-payment token, and return the originally generated result
 
 ### Client
 
@@ -57,7 +57,7 @@ Once we have completed the tutorial the client will perform the following steps:
 
 1. Connect to an account from which to send payments
 1. Initiate a payment using the address, amount, and condition provided in the response to the original letter request
-1. Complete the payment and return the proof-of-payment token to be used to complete the original request
+1. Complete the payment and return the proof-of-payment token and instructions on how to use it to complete the original request
 
 ## Step 1: Get the code
 
@@ -84,6 +84,7 @@ You should see the following files:
 
 ```shell
 README.md
+package-lock.json
 package.json
 pay.js
 plugins.js
@@ -121,7 +122,7 @@ Since Interledger connects potentially very different ledgers together, we need 
 
 Ledger plugins expose a common interface (the Ledger Plugin Interface) so that irrespective of which ledger your application is connected to, the way it sends and receives payments is identical.
 
-> **NOTE:** As we go through this tutorial we'll be using different functions of the Ledger Plugin Interface. You can find the reference documentation in [IL-RFC 0004](https://interledger.org/rfcs/0004-ledger-plugin-interface/).
+> **NOTE:** As we go through this tutorial we'll be using different functions of the Ledger Plugin Interface. You can find the reference documentation in [IL-RFC 0004, Draft 8](https://interledger.org/rfcs/0004-ledger-plugin-interface/draft-8.html).
 
 We've put all of the plugin config into a single file called `plugins.js`. The default plugin we use is the *XRP Escrow* plugin which allows us to connect to the XRP Testnet Ledger.
 
@@ -196,7 +197,9 @@ Now we have the plugin connected and we have the info we need about the account 
 
 Our next job is to start up the web server that will host our Letter Shop service.
 
-Whenever a customer visits the website we'll try to find a proof-of-payment token in the URL. If the token is there we'll try to redeem it and give the customer their letter. If not we'll generate the letter and the proof-of-payment token and store these for later. We'll then generate another token that is derived from the proof-of-payment token and give this to the customer to attach to their payment so we can reconcile the payment and this original request.
+Whenever a customer visits the website we'll try to find a proof-of-payment token in the URL. If the token is there we'll try to redeem it and give the customer their letter. If not we'll generate the letter and the proof-of-payment token and store these for later. 
+
+Lastly we derive the condition for the payment (explained in more detail later) which we can give to the customer to send with their payment. This has an important function in Interledger but for our shop it's also useful to reconcile the payment and this original request.
 
 Replace the text `// Handle incoming web requests...` with the following:
 
@@ -229,7 +232,7 @@ Replace the text `// Handle incoming web requests...` with the following:
       // conditional transfer.
       const secret = crypto.randomBytes(32)
       const fulfillment = base64url(secret)
-      const condition = base64url(crypto.createHash('sha256').update(secret).digest())
+      const condition = sha256(secret)
 
       //Get the letter that we are selling
       const letter = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ').split('')[(Math.floor(Math.random() * 26))]
@@ -306,7 +309,7 @@ The condition is simply a SHA-256 hash of the fulfillment, meaning nobody can de
 
 In our shop we use the fulfillment as a proof-of-payment token so we store the letter we have generated for the customer using the fulfillment as the index.
 
-The rest of that branch oif the code simply returns the amount, ILP Address and condition back to the customer so they can pay for their request.
+The rest of that branch of the code simply returns the amount, ILP Address, and condition back to the customer so they can pay for their request.
 
 ### Interledger Addresses
 
@@ -324,7 +327,7 @@ In this case, the Interledger address of our shop's account is `test.crypto.xrp.
 
 > To read more about ILP Addresses and how these can be derived for accounts on both traditional and new payment networks see [IL-RFC-15, draft 1](https://interledger.org/rfcs/0015-ilp-addresses/draft-1.html).
 
-If you run the server now you'll see that it now both step 1 and 2 of our 5 step program. 
+If you run the server now you'll see that it completes both step 1 and 2 of our 5 step program. 
 
 :tada: Congratulations, you're making great progress to becoming a letter baron.
 
@@ -337,7 +340,7 @@ As instructed on the console, open a browser window and go to http://localhost:8
 You should get a message along the lines of:
 
 ```
-Please send an Interledger payment of 10 XRP to XXXXXXXXXXXXXXXXX using the condition YYYYYYYYYYYYYYYY
+Please send an Interledger payment of 0.00001 XRP to XXXXXXXXXXXXXXXXX using the condition YYYYYYYYYYYYYYYY
 > node ./pay.js XXXXXXXXXXXXXXXXX 10 YYYYYYYYYYYYYYYY
 ```
 
@@ -379,7 +382,7 @@ You'll see that the script connects to the ledger and returns similar informatio
 
 But after that it simply hangs...
 
-The comments in the code probabaly gave it away, but we now need to make the payment. Replace the text `// Make payment...` with:
+The comments in the code probably gave it away, but we now need to make the payment. Replace the text `// Make payment...` with:
 
 ```js
   console.log(` 2. Making payment to ${destinationAddress} using condition: ${condition}`)
@@ -411,7 +414,7 @@ We have parsed the `destinationAddress`, `destinationAmount`, and `condition` fr
 
 At this point we should dig a little deeper into how transfers work in Interledger. They are a little different to a regular transfer on most traditional payment networks/ledgers in that they happen in two phases:
 1. The transfer is prepared pending either the fulfillment of a condition, or expiry of a timeout
-1. The transfer is either executed becuase the condition was fulfilled, or it rolls-back because it expired
+1. The transfer is either executed because the condition was fulfilled, or it rolls-back because it expired
 
 In ILP we define a standard for the condition and the fulfillment. The condition is a 32-byte [SHA-256 hash](https://en.wikipedia.org/wiki/SHA-2) and the fulfillment is the 32-byte preimage of that hash. When a transfer is prepared by the sender the funds are locked, waiting for delivery to the receiver. The lock is the condition (a hash) and the key is the fulfillment. But, to avoid funds being locked up indefinitely, if the key is never produced the prepared transfer also has an expiry.
 
@@ -419,7 +422,7 @@ In ILP we define a standard for the condition and the fulfillment. The condition
 
 We call this arrangement, between the parties to the transfer, a Hash Timelock Agreement (HTLA). You may have come across HTLCs or Hash Timelock Contracts as used in many crypto-currency based system like Lightning. HTLAs are a generalization of this that don't prescribe how they are enforced (i.e. It may not be a contract written in the code of the ledger like in a crypto-currency ledger, it may be an agreement enforced by law or simply based on trust). 
 
-How two parties make transfers to one-another of a ledger will depend on the relationship between them and also the features of the underlying ledger. For our tutorial we are using a plugin specific to XRP Ledger, which uses [the on-ledger escrow](https://ripple.com/build/rippleapi/#transaction-types) features of that ledger. This means the parties are able to make transfers with no pre-existing relationship.
+How two parties make transfers to one-another on a ledger will depend on the relationship between them and also the features of the underlying ledger. For our tutorial we are using a plugin specific to XRP Ledger, which uses [the on-ledger escrow](https://ripple.com/build/rippleapi/#transaction-types) features of that ledger. This means the parties are able to make transfers with no pre-existing relationship.
 
 For more info on the different types of HTLA have a look at [IL-RFC 0022](https://interledger.org/rfcs/0022-hashed-timelock-agreements/).
 
@@ -455,7 +458,7 @@ npm install -g jslint
 Next use `curl` to POST an API call to the XRP Testnet server (replace the address with your sending address):
 
 ```shell
-curl -X POST -d '{ "method": "account_objects", "params": [{"ledger_index":"validated", "account": "YOUR-SENDING-ADDRESS", "type": "escrow"}]}' https://client.altnet.rippletest.net:51234
+curl -X POST -d '{ "method": "account_objects", "params": [{"ledger_index":"validated", "account": "YOUR-SENDING-ADDRESS", "type": "escrow"}]}' https://client.altnet.rippletest.net:51234 | jslint
 ```
 
 *Installing `curl` is out of scope for this tutorial so if you don't already have it you can skip ahead or figure that bit out yourself.*
@@ -477,7 +480,7 @@ Replace `//Handle incoming transfers...` with the following code:
 ```js
   plugin.on('incoming_prepare', function (transfer) {
 
-    if (transfer.amount !== '10') {
+    if (parseInt(transfer.amount) < 10) {
       
       //Transfer amount is incorrect
       console.log(`    - Payment received for the wrong amount (${transfer.amount})... Rejected`)
@@ -581,7 +584,7 @@ To do this we need to make a few tweaks to the server and client.
 
 First, we need to make our responses machine readable so that the client can find the details of the payment required in the response. Recall how we used the 402 (Payment Required) HTTP response in the server when we responded to the initial request. Now we can see how this is useful for clients to help them recognise the response type.
 
-Another minor change that required is to put the payment details in a response header in a standard format that clients recognise.
+Another minor change that is required is to put the payment details in a response header in a standard format that clients recognise.
 
 Modify the code in `shop.js` to look like this:
 
@@ -610,7 +613,7 @@ In the terminal windo where you ran your client, start the proxy instead:
 ```shell
 node ./proxy.js
 ```
-Now, instead of visiting http://localhost:8000/, visit http://localhost:8001/. This will take a while to load because in the background the proxy is busy payng for your request.
+Now, instead of visiting http://localhost:8000/, visit http://localhost:8001/. This will take a while to load because in the background the proxy is busy paying for your request.
 
 Look at the two terminal windows to see the activity at the shop and the proxy for each request.
 

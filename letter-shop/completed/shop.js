@@ -3,6 +3,7 @@ const url = require('url')
 const crypto = require('crypto')
 const plugin = require('./plugins.js').xrp.Shop()
 function base64url (buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') }
+function sha256 (preimage) { return crypto.createHash('sha256').update(preimage).digest() }
 
 let fulfillments = {}
 let letters = {}
@@ -53,8 +54,8 @@ plugin.connect().then(function () {
       // conditional transfer.
       const secret = crypto.randomBytes(32)
       const fulfillment = base64url(secret)
-      const condition = base64url(crypto.createHash('sha256').update(secret).digest())
-
+      const condition = sha256(secret)
+      
       //Get the letter that we are selling
       const letter = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ').split('')[(Math.floor(Math.random() * 26))]
 
@@ -111,7 +112,7 @@ plugin.connect().then(function () {
   //Handle incoming payments
   plugin.on('incoming_prepare', function (transfer) {
 
-    if (transfer.amount !== '10') {
+    if (parseInt(transfer.amount) < 10) {
       
       //Transfer amount is incorrect
       console.log(`    - Payment received for the wrong amount (${transfer.amount})... Rejected`)
