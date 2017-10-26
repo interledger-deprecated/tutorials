@@ -192,7 +192,7 @@ We can get a lot of info from the plugin about the ledger and the account it is 
 
 Now we have the plugin connected and we have the info we need about the account where we will be accepting payments. 
 
-&#1f389; Congratulations, our shop is performing step 1 of our 5 step plan!
+:tada: Congratulations, our shop is performing step 1 of our 5 step plan!
 
 Our next job is to start up the web server that will host our Letter Shop service.
 
@@ -326,7 +326,7 @@ In this case, the Interledger address of our shop's account is `test.crypto.xrp.
 
 If you run the server now you'll see that it now both step 1 and 2 of our 5 step program. 
 
-&#1f389; Congratulations, you're making great progress to becoming a letter baron.
+:tada: Congratulations, you're making great progress to becoming a letter baron.
 
 Now let's put ourselves in the shoes of the customer and attempt to buy our first letter!
 
@@ -432,7 +432,7 @@ For more info on the different types of HTLA have a look at [IL-RFC 0022](https:
 
 Now that we've added the code to make our transfer let's run the script again and pay for our letter. This time you should see a message to say that we are making our payment, and waiting for the fulfillment.
 
-&#1f389; Congratulations, that's step 2 of 3 completed for our client! Now switch back to the terminal where you're running the shop and let's see if the payment has arrived...
+:tada: Congratulations, that's step 2 of 3 completed for our client! Now switch back to the terminal where you're running the shop and let's see if the payment has arrived...
 
 It hasn't, has it? So let's figure out why.
 
@@ -539,7 +539,7 @@ The last step we need to perform is to fulfill the transfer so that the funds ar
 
 Restart the shop service and run through the process of visiting the website and making the payment again. You should see that the output of the server now includes accepting and fulfilling the payment. 
 
-&#1f389; Congratulations, that's step 4 of 5 complete for our server!
+:tada: Congratulations, that's step 4 of 5 complete for our server!
 
 But, our client is still waiting for the fulfillment. Let's go back to the client and finish this up!
 
@@ -563,13 +563,13 @@ All we need to do with that fulfillment in this instance is print it to the scre
 
 Re-run your client and after a few seconds you should now get a response to that effect. 
 
-&#1f389; Congratulations! You've now finished the client.
+:tada: Congratulations! You've now finished the client.
 
 So all that's left to do is get that letter! Go back to your browser and paste the URL that was output by the client into your address bar and you should receive the letter that was prepared for you upon your first request.
 
 If you switch back to the terminal window for your server you'll see some additional output showing that the shop server accepted the request, looked up the letter using the fulfillment, and returned this letter.
 
-&#1f389; Congratulations, that's step 5 of 5 and you now have a working server too.
+:tada: Congratulations, that's step 5 of 5 and you now have a working server too.
 
 ## Bonus Step: A Paying Proxy
 
