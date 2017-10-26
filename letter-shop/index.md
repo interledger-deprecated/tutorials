@@ -21,8 +21,9 @@ In order to make the payment required to get our letter we will also implement a
 ## What you'll learn:
 
 * about conditional payments and hashtimelock agreements
+* about ILP Addresses
 * about the Ledger Plugin Interface (LPI) and how to configure and use plugins
-* how to build a serivce that accepts Interledger payments 
+* how to build a service that accepts Interledger payments 
 * how to build a basic payment client for sending Interledger payments
 * (bonus) how to build a client proxy that automates paying for requests as required
 
@@ -114,15 +115,15 @@ But, we've hit a snag... Read on.
 
 ### Interledger plugins
 
-Our shop, and many other componenets we'll build in this tutorial, use ledger plugins. A plugin is a piece of code that talks to a specific account on a specific ledger.
+Our shop, and many other components we'll build in this tutorial, use ledger plugins. A plugin is a piece of code that talks to a specific account on a specific ledger.
 
 Since Interledger connects potentially very different ledgers together, we need an abstraction layer that hides the specifics of the ledger, but exposes the interface needed to send and receive money over that ledger. That is what Interledger plugins are for. 
 
-Ledger plugins expose a common interface (the Ledger Plugin Interface) so that irresepectvie of which ledger your application is connected to, the way it sends and receives payments is identical.
+Ledger plugins expose a common interface (the Ledger Plugin Interface) so that irrespective of which ledger your application is connected to, the way it sends and receives payments is identical.
 
 > **NOTE:** As we go through this tutorial we'll be using different functions of the Ledger Plugin Interface. You can find the reference documentation in [IL-RFC 0004](https://interledger.org/rfcs/0004-ledger-plugin-interface/).
 
-We've put all of the plugin config into a single file called `plugins.js`. The default plugin we use is the *XRP Escrow* plugin whcih allows us to connect to the XRP Testnet Ledger.
+We've put all of the plugin config into a single file called `plugins.js`. The default plugin we use is the *XRP Escrow* plugin which allows us to connect to the XRP Testnet Ledger.
 
 The *XRP Escrow* plugin is a wrapper around [RippleLib](https://github.com/ripple/ripple-lib), and exposes the Ledger Plugin Interface (LPI). In the code, you see that an 'ilp-plugin-xrp-escrow' Plugin is being configured with secret, account, server, and prefix. The first three values come from the [XRP Testnet Faucet](https://ripple.com/build/xrp-test-net/).
 
@@ -177,17 +178,17 @@ plugin.connect().then(function () {
 })
 ```
 
-If we run the server now it will use the ledger plugin to connect to the XRP Testnet Ledger. When it is connected (usually a few seconds) you'll see some logging in the console providing info about the ledger.
+Stop the server and restart it with the new code. Now it will use the ledger plugin to connect to the XRP Testnet Ledger. When it is connected (usually a few seconds) you'll see some logging in the console providing info about the ledger.
 
-We can get a lot of info from the plugin about the ledger and the account it is connected to using the `plugin.getInfo()` and `plugin.getAccount()` methods.
+We can get a lot of info from the plugin about the ledger and the account it is connected to using the `getInfo()` and `getAccount()` methods.
 
-> NOTE: The currency of the ledger is XRP and the currency scale is 6. That means that to send 1 XRP to this ledger we must send an Interledger payment with an amount of 1000000 (1 million Drops).
+> **NOTE:** The currency of the ledger is XRP and the currency scale is 6. That means that to send 1 XRP to this ledger we must send an Interledger payment with an amount of 1000000 (1 million Drops).
 
 > **Interledger standardizes on 64-bit unsigned integers for amounts.**
 
 > Note how we normalize the cost of our service (10 Drops) to be able to express it in XRP (0.00001 XRP) for display purposes.
 
-> **IMPORTANT:** Scale (and precision) can be a confusing aspect of any financial protocol and you'd do well to understand the ledger you are working with and be sure that when you are sending payments and displaying amounts to users you are getting your scale and precision right. We made the decision to avoid some complexity by using only scale and requiring that ledgers always express their currency with a precision of zero. This allowed us to only using integers (not decimals) in the protocol so all numbers are normalised to that form. There are a lot of other technical reasons behind the decision which you'll find discussed at length in the project issue list if you are interested.
+> **IMPORTANT:** Scale (and precision) can be a confusing aspect of any financial protocol and you'd do well to understand the ledger you are working with and be sure that when you are sending payments and displaying amounts to users you are getting your scale and precision right. We made the decision to avoid some complexity by using only scale and requiring that ledgers always express their currency with a precision of zero. This allowed us to only use integers (not decimals) in the protocol so all numbers are normalised to that form. There are a lot of other technical reasons behind the decision which you'll find discussed at length in the project issue list if you are interested.
 
 Now we have the plugin connected and we have the info we need about the account where we will be accepting payments. 
 
