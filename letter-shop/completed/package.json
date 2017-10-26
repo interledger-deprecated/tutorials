@@ -1,0 +1,36 @@
+{
+  "name": "letter-shop-tutorial",
+  "version": "1.0.0",
+  "description": "Interledger Letter Shop Tutorial",
+  "main": "pay.js",
+  "dependencies": {
+    "ilp-packet": "^1.3.0",
+    "ilp-plugin-payment-channel-framework": "github:interledgerjs/ilp-plugin-payment-channel-framework#bs-clp",
+    "ilp-plugin-xrp-escrow": "github:michielbdejong/ilp-plugin-xrp-escrow#72e4178",
+    "node-fetch": "^1.7.3",
+    "uuid": "^3.1.0"
+  },
+  "devDependencies": {
+    "chai": "^4.1.1",
+    "eslint": "^4.5.0",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-node": "^5.1.0",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-standard": "^3.0.1",
+    "mocha": "^3.4.1"
+  },
+  "scripts": {
+    "test": "eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/interledger/tutorials.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/interledger/tutorials/issues"
+  },
+  "homepage": "https://github.com/interledger/tutorials#readme"
+}
