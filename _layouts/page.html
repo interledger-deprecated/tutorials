@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ page.title }}</title>
+    {% include head.html %}
+</head>
+  <body class="docs-overview">
+    
+{% include nav.html %}
+
+<div class="container docs-wrapper">
+  <div class="row">
+    {% include docs-sidebar.html %}
+    <div class="col-sm-8 wrapper">
+
+        {{ content }}
+
+    </div>
+  </div>
+</div>
+
+{% include footer.html %}
+{% include scripts.html %}
+
+</body>
+</html>

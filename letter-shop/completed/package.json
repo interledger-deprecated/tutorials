@@ -32,5 +32,10 @@
   "bugs": {
     "url": "https://github.com/interledger/tutorials/issues"
   },
-  "homepage": "https://github.com/interledger/tutorials#readme"
+  "homepage": "https://interledger.org/tutorials",
+  "eslintConfig": {
+    "rules": {
+      "max-len": ["error", 80]
+    }
+  }
 }
