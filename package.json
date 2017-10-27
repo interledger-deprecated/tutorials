@@ -7,6 +7,9 @@
     "ilp-packet": "^1.3.0",
     "ilp-plugin-payment-channel-framework": "github:interledgerjs/ilp-plugin-payment-channel-framework#bs-clp",
     "ilp-plugin-xrp-escrow": "github:michielbdejong/ilp-plugin-xrp-escrow#72e4178",
+    "koa": "^2.3.0",
+    "koa-ilp": "0.0.1",
+    "koa-router": "^7.2.1",
     "node-fetch": "^1.7.3",
     "uuid": "^3.1.0"
   },
