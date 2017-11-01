@@ -8,8 +8,15 @@ function base64url (buf) {
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
+function toBase64(base64url) {
+  base64url = base64url.replace(/-/g, '+').replace(/_/g, '/');
+  while (base64url.length % 4)
+  base64url += '=';
+  return base64url
+}
+
 function sha256 (preimage) {
-  return crypto.createHash('sha256').update(preimage).digest()
+  return crypto.createHash('sha256').update(preimage).digest('base64')
 }
 
 let fulfillments = {}
@@ -81,7 +88,7 @@ plugin.connect().then(function () {
       res.end(`Please send an Interledger payment of` +
           ` ${normalizedCost} ${ledgerInfo.currencyCode} to ${account}` +
           ` using the condition ${condition}\n` +
-        `> node ./pay.js ${account} ${cost} ${condition}`)
+        `> node pay.js ${account} ${cost} ${condition}`)
     } else {
       // Request for a letter with the fulfillment in the path
 
@@ -135,28 +142,30 @@ plugin.connect().then(function () {
         additional_info: {}
       })
     } else {
+      const executionCondition = toBase64(transfer.executionCondition)
       // Lookup fulfillment from condition attached to incoming transfer
-      const fulfillment = fulfillments[transfer.executionCondition]
+      const fulfillment = fulfillments[executionCondition]
 
       if (!fulfillment) {
         // We don't have a fulfillment for this condition
         console.log(`    - Payment received with an unknwon condition: ` +
-                                              `${transfer.executionCondition}`)
+                                              `${executionCondition}`)
 
         plugin.rejectIncomingTransfer(transfer.id, {
           code: 'F05',
           name: 'Wrong Condition',
           message: `Unable to fulfill the condition:  ` +
-                                              `${transfer.executionCondition}`,
+                                              `${executionCondition}`,
           triggered_by: plugin.getAccount(),
           triggered_at: new Date().toISOString(),
           forwarded_by: [],
           additional_info: {}
         })
+        return
       }
 
       console.log(` 4. Accepted payment with condition ` +
-                                              `${transfer.executionCondition}.`)
+                                              `${executionCondition}.`)
       console.log(`    - Fulfilling transfer on the ledger ` +
                                             `using fulfillment: ${fulfillment}`)
 
