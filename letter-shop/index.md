@@ -257,7 +257,7 @@ Replace the text `// Handle incoming web requests...` with the following:
       res.end(`Please send an Interledger payment of` +
           ` ${normalizedCost} ${ledgerInfo.currencyCode} to ${account}` +
           ` using the condition ${condition}\n` +
-        `> node ./pay.js ${account} ${cost} ${condition}`)
+        `> node pay.js ${account} ${cost} ${condition}`)
     } else {
       // Request for a letter with the fulfillment in the path
 
@@ -345,7 +345,7 @@ You should get a message along the lines of:
 
 ```
 Please send an Interledger payment of 0.00001 XRP to XXXXXXXXXXXXXXXXX using the condition YYYYYYYYYYYYYYYY
-> node ./pay.js XXXXXXXXXXXXXXXXX 10 YYYYYYYYYYYYYYYY
+> node pay.js XXXXXXXXXXXXXXXXX 10 YYYYYYYYYYYYYYYY
 ```
 
 As they say, *"There is no such thing as a free letter!"*. So now we turn our attention to the **client**, and paying for this elusive character.
@@ -353,7 +353,7 @@ As they say, *"There is no such thing as a free letter!"*. So now we turn our at
 Open a **new console window** and make sure your current working directory is the same one you're using to run the shop. Copy the command that the shop helpfully provided and paste it into the console window.
 
 ```shell
-node ./pay.js XXXXXXXXXXXXXXXXX 10 YYYYYYYYYYYYYYYY
+node pay.js XXXXXXXXXXXXXXXXX 10 YYYYYYYYYYYYYYYY
 ```
 
 If you already configured the customer plugin in `plugins.js` then you'll likely see the following and then the script completes:
@@ -507,28 +507,30 @@ Replace `//Handle incoming transfers...` with the following code:
         additional_info: {}
       })
     } else {
+      const executionCondition = toBase64(transfer.executionCondition)
       // Lookup fulfillment from condition attached to incoming transfer
-      const fulfillment = fulfillments[transfer.executionCondition]
+      const fulfillment = fulfillments[executionCondition]
 
       if (!fulfillment) {
         // We don't have a fulfillment for this condition
         console.log(`    - Payment received with an unknwon condition: ` +
-                                              `${transfer.executionCondition}`)
+                                              `${executionCondition}`)
 
         plugin.rejectIncomingTransfer(transfer.id, {
           code: 'F05',
           name: 'Wrong Condition',
           message: `Unable to fulfill the condition:  ` +
-                                              `${transfer.executionCondition}`,
+                                              `${executionCondition}`,
           triggered_by: plugin.getAccount(),
           triggered_at: new Date().toISOString(),
           forwarded_by: [],
           additional_info: {}
         })
+        return
       }
 
       console.log(` 4. Accepted payment with condition ` +
-                                              `${transfer.executionCondition}.`)
+                                              `${executionCondition}.`)
       console.log(`    - Fulfilling transfer on the ledger ` +
                                             `using fulfillment: ${fulfillment}`)
 
@@ -607,7 +609,7 @@ Modify the code in `shop.js` to look like this:
       res.setHeader("Pay", `${cost} ${account} ${condition}`)
 
       res.end(`Please send an Interledger payment of ${normalizedCost} ${ledgerInfo.currencyCode} to ${account} using the condition ${condition}\n` +
-              `> node ./pay.js ${account} ${cost} ${condition}`)
+              `> node pay.js ${account} ${cost} ${condition}`)
 ```
 
 When our shop responds to the request for a letter with a *"Payment Required"* response it will include the details of how to make the payment in the *"Pay"* header.
