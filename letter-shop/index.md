@@ -88,6 +88,8 @@ You should see the following files:
 
 ```shell
 README.md
+completed/
+index.md
 package-lock.json
 package.json
 pay.js
@@ -172,7 +174,7 @@ plugin.connect().then(function () {
   console.log(`    -- Currency: ${ledgerInfo.currencyCode}`)
   console.log(`    -- CurrencyScale: ${ledgerInfo.currencyScale}`)
 
-  // Covert our cost (10) into the right format given the ledger scale
+  // Convert our cost (10) into the right format given the ledger scale
   const normalizedCost = cost / Math.pow(10, parseInt(ledgerInfo.currencyScale))
 
   console.log(` 2. Starting web server to accept requests...`)
@@ -210,9 +212,6 @@ Lastly we derive the condition for the payment (explained in more detail later) 
 Replace the text `// Handle incoming web requests...` with the following:
 
 ```js
-  console.log(` 2. Starting web server to accept requests...`)
-  console.log(`    - Charging ${normalizedCost} ${ledgerInfo.currencyCode}`)
-
   // Handle incoming web requests
   http.createServer(function (req, res) {
     // Browsers are irritiating and often probe for a favicon, just ignore
@@ -234,38 +233,39 @@ Replace the text `// Handle incoming web requests...` with the following:
       // Generate a preimage and its SHA256 hash,
       // which we'll use as the fulfillment and condition, respectively, of the
       // conditional transfer.
-      const secret = crypto.randomBytes(32)
-      const fulfillment = base64url(secret)
-      const condition = sha256(secret)
+      const fulfillment = crypto.randomBytes(32)
+      const condition = sha256(fulfillment)
 
       // Get the letter that we are selling
       const letter = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
         .split('')[(Math.floor(Math.random() * 26))]
 
       console.log(`    - Generated letter (${letter}) ` +
-      `at http://localhost:8000${req.url}${fulfillment}`)
+      `at http://localhost:8000${req.url}${base64url(fulfillment)}`)
 
       // Store the fulfillment (indexed by condition) to use when we get paid
-      fulfillments[condition] = fulfillment
+      fulfillments[base64url(condition)] = fulfillment
 
       // Store the letter (indexed by the fulfillment) to use when the customer
       // requests it
-      letters[fulfillment] = letter
+      letters[base64url(fulfillment)] = letter
 
       console.log(`    - Waiting for payment...`)
 
+      res.setHeader(`Pay`, `${cost} ${account} ${base64url(condition)}`)
+
       res.end(`Please send an Interledger payment of` +
           ` ${normalizedCost} ${ledgerInfo.currencyCode} to ${account}` +
-          ` using the condition ${condition}\n` +
-        `> node pay.js ${account} ${cost} ${condition}`)
+          ` using the condition ${base64url(condition)}\n` +
+        `> node ./pay.js ${account} ${cost} ${base64url(condition)}`)
     } else {
       // Request for a letter with the fulfillment in the path
 
       // Get fulfillment from the path
-      const fulfillment = requestUrl.path.substring(1)
+      const fulfillmentBase64 = requestUrl.path.substring(1)
 
       // Lookup the letter we stored previously for this fulfillment
-      const letter = letters[fulfillment]
+      const letter = letters[fulfillmentBase64]
 
       if (!letter) {
         // We have no record of a letter that was issued for this fulfillment
@@ -273,7 +273,8 @@ Replace the text `// Handle incoming web requests...` with the following:
         // Respond with a 404 HTTP Status Code (Not Found)
         res.statusCode = 404
 
-        console.log(`    - No letter found for fulfillment: ${fulfillment}`)
+        console.log('     - No letter found for fulfillment: ' +
+                                                      fulfillmentBase64)
 
         res.end(`Unrecognized fulfillment.`)
       } else {
@@ -281,7 +282,7 @@ Replace the text `// Handle incoming web requests...` with the following:
         res.end(`Your letter: ${letter}`)
 
         console.log(` 5. Providing paid letter to customer ` +
-                                            `for fulfillment ${fulfillment}`)
+                                 `for fulfillment ${fulfillmentBase64}`)
       }
     }
   }).listen(8000, function () {
@@ -300,9 +301,11 @@ First we set the HTTP Response code to 402 (Payment Required). This is not neces
 Then we generate the data required to request an Interledger payment from the customer.
 
 ```js
-const secret = crypto.randomBytes(32) //Get a random 32-byte number as our secret
-const fulfillment = base64url(secret) //Encode it as a string so we can share it easily (put it in URLs etc.)
-const condition = sha256(secret) //Hash the secret to get the condition we'll use for the payment
+// Generate a preimage and its SHA256 hash,
+// which we'll use as the fulfillment and condition, respectively, of the
+// conditional transfer.
+const fulfillment = crypto.randomBytes(32)
+const condition = sha256(fulfillment)
 ```
 
 The first piece of data is the fulfillment that we will release to the payer when the payment is delivered. The second is the condition we give to the payer to attach to the payment.
@@ -345,7 +348,7 @@ You should get a message along the lines of:
 
 ```
 Please send an Interledger payment of 0.00001 XRP to XXXXXXXXXXXXXXXXX using the condition YYYYYYYYYYYYYYYY
-> node pay.js XXXXXXXXXXXXXXXXX 10 YYYYYYYYYYYYYYYY
+> node ./pay.js XXXXXXXXXXXXXXXXX 10 YYYYYYYYYYYYYYYY
 ```
 
 As they say, *"There is no such thing as a free letter!"*. So now we turn our attention to the **client**, and paying for this elusive character.
@@ -353,7 +356,7 @@ As they say, *"There is no such thing as a free letter!"*. So now we turn our at
 Open a **new console window** and make sure your current working directory is the same one you're using to run the shop. Copy the command that the shop helpfully provided and paste it into the console window.
 
 ```shell
-node pay.js XXXXXXXXXXXXXXXXX 10 YYYYYYYYYYYYYYYY
+node ./pay.js XXXXXXXXXXXXXXXXX 10 YYYYYYYYYYYYYYYY
 ```
 
 If you already configured the customer plugin in `plugins.js` then you'll likely see the following and then the script completes:
@@ -507,38 +510,37 @@ Replace `//Handle incoming transfers...` with the following code:
         additional_info: {}
       })
     } else {
-      const executionCondition = toBase64(transfer.executionCondition)
       // Lookup fulfillment from condition attached to incoming transfer
-      const fulfillment = fulfillments[executionCondition]
+      const fulfillment = fulfillments[transfer.executionCondition]
 
       if (!fulfillment) {
         // We don't have a fulfillment for this condition
-        console.log(`    - Payment received with an unknwon condition: ` +
-                                              `${executionCondition}`)
+        console.log(`    - Payment received with an unknown condition: ` +
+                                              `${transfer.executionCondition}`)
 
         plugin.rejectIncomingTransfer(transfer.id, {
           code: 'F05',
           name: 'Wrong Condition',
           message: `Unable to fulfill the condition:  ` +
-                                              `${executionCondition}`,
+                                              `${transfer.executionCondition}`,
           triggered_by: plugin.getAccount(),
           triggered_at: new Date().toISOString(),
           forwarded_by: [],
           additional_info: {}
         })
-        return
       }
 
       console.log(` 4. Accepted payment with condition ` +
-                                              `${executionCondition}.`)
+                                              `${transfer.executionCondition}.`)
       console.log(`    - Fulfilling transfer on the ledger ` +
-                                            `using fulfillment: ${fulfillment}`)
+                                 `using fulfillment: ${base64url(fulfillment)}`)
 
       // The ledger will check if the fulfillment is correct and
       // if it was submitted before the transfer's rollback timeout
-      plugin.fulfillCondition(transfer.id, fulfillment).catch(function () {
-        console.log(`    - Error fulfilling the transfer`)
-      })
+      plugin.fulfillCondition(transfer.id, base64url(fulfillment))
+        .catch(function () {
+          console.log(`    - Error fulfilling the transfer`)
+        })
       console.log(`    - Payment complete`)
     }
   })
@@ -566,10 +568,11 @@ As you've proabably guessed, we're missing an event listener in our client too. 
 
 ```js
   // Handle fulfillments
-  plugin.on('outgoing_fulfill', function (transferId, fulfillment) {
-    console.log(`    - Transfer executed. Got fulfillment: ${fulfillment}`)
+  plugin.on('outgoing_fulfill', function (transferId, fulfillmentBase64) {
+    console.log('    - Transfer executed. Got fulfillment: ' +
+                                                      fulfillmentBase64)
     console.log(` 3. Collect your letter at ` +
-                                    `http://localhost:8000/${fulfillment}`)
+                           `http://localhost:8000/${fulfillmentBase64}`)
     plugin.disconnect()
     process.exit()
   })
@@ -609,7 +612,7 @@ Modify the code in `shop.js` to look like this:
       res.setHeader("Pay", `${cost} ${account} ${condition}`)
 
       res.end(`Please send an Interledger payment of ${normalizedCost} ${ledgerInfo.currencyCode} to ${account} using the condition ${condition}\n` +
-              `> node pay.js ${account} ${cost} ${condition}`)
+              `> node ./pay.js ${account} ${cost} ${condition}`)
 ```
 
 When our shop responds to the request for a letter with a *"Payment Required"* response it will include the details of how to make the payment in the *"Pay"* header.

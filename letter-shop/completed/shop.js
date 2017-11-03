@@ -8,15 +8,8 @@ function base64url (buf) {
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
-function toBase64(base64url) {
-  base64url = base64url.replace(/-/g, '+').replace(/_/g, '/');
-  while (base64url.length % 4)
-  base64url += '=';
-  return base64url
-}
-
 function sha256 (preimage) {
-  return crypto.createHash('sha256').update(preimage).digest('base64')
+  return crypto.createHash('sha256').update(preimage).digest()
 }
 
 let fulfillments = {}
@@ -36,7 +29,7 @@ plugin.connect().then(function () {
   console.log(`    -- Currency: ${ledgerInfo.currencyCode}`)
   console.log(`    -- CurrencyScale: ${ledgerInfo.currencyScale}`)
 
-  // Covert our cost (10) into the right format given the ledger scale
+  // Convert our cost (10) into the right format given the ledger scale
   const normalizedCost = cost / Math.pow(10, parseInt(ledgerInfo.currencyScale))
 
   console.log(` 2. Starting web server to accept requests...`)
@@ -63,40 +56,39 @@ plugin.connect().then(function () {
       // Generate a preimage and its SHA256 hash,
       // which we'll use as the fulfillment and condition, respectively, of the
       // conditional transfer.
-      const secret = crypto.randomBytes(32)
-      const fulfillment = base64url(secret)
-      const condition = sha256(secret)
+      const fulfillment = crypto.randomBytes(32)
+      const condition = sha256(fulfillment)
 
       // Get the letter that we are selling
       const letter = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
         .split('')[(Math.floor(Math.random() * 26))]
 
       console.log(`    - Generated letter (${letter}) ` +
-      `at http://localhost:8000${req.url}${fulfillment}`)
+      `at http://localhost:8000${req.url}${base64url(fulfillment)}`)
 
       // Store the fulfillment (indexed by condition) to use when we get paid
-      fulfillments[condition] = fulfillment
+      fulfillments[base64url(condition)] = fulfillment
 
       // Store the letter (indexed by the fulfillment) to use when the customer
       // requests it
-      letters[fulfillment] = letter
+      letters[base64url(fulfillment)] = letter
 
       console.log(`    - Waiting for payment...`)
 
-      res.setHeader(`Pay`, `${cost} ${account} ${condition}`)
+      res.setHeader(`Pay`, `${cost} ${account} ${base64url(condition)}`)
 
       res.end(`Please send an Interledger payment of` +
           ` ${normalizedCost} ${ledgerInfo.currencyCode} to ${account}` +
-          ` using the condition ${condition}\n` +
-        `> node pay.js ${account} ${cost} ${condition}`)
+          ` using the condition ${base64url(condition)}\n` +
+        `> node ./pay.js ${account} ${cost} ${base64url(condition)}`)
     } else {
       // Request for a letter with the fulfillment in the path
 
       // Get fulfillment from the path
-      const fulfillment = requestUrl.path.substring(1)
+      const fulfillmentBase64 = requestUrl.path.substring(1)
 
       // Lookup the letter we stored previously for this fulfillment
-      const letter = letters[fulfillment]
+      const letter = letters[fulfillmentBase64]
 
       if (!letter) {
         // We have no record of a letter that was issued for this fulfillment
@@ -104,7 +96,8 @@ plugin.connect().then(function () {
         // Respond with a 404 HTTP Status Code (Not Found)
         res.statusCode = 404
 
-        console.log(`    - No letter found for fulfillment: ${fulfillment}`)
+        console.log('     - No letter found for fulfillment: ' +
+                                                      fulfillmentBase64)
 
         res.end(`Unrecognized fulfillment.`)
       } else {
@@ -112,7 +105,7 @@ plugin.connect().then(function () {
         res.end(`Your letter: ${letter}`)
 
         console.log(` 5. Providing paid letter to customer ` +
-                                            `for fulfillment ${fulfillment}`)
+                                 `for fulfillment ${fulfillmentBase64}`)
       }
     }
   }).listen(8000, function () {
@@ -142,38 +135,37 @@ plugin.connect().then(function () {
         additional_info: {}
       })
     } else {
-      const executionCondition = toBase64(transfer.executionCondition)
       // Lookup fulfillment from condition attached to incoming transfer
-      const fulfillment = fulfillments[executionCondition]
+      const fulfillment = fulfillments[transfer.executionCondition]
 
       if (!fulfillment) {
         // We don't have a fulfillment for this condition
-        console.log(`    - Payment received with an unknwon condition: ` +
-                                              `${executionCondition}`)
+        console.log(`    - Payment received with an unknown condition: ` +
+                                              `${transfer.executionCondition}`)
 
         plugin.rejectIncomingTransfer(transfer.id, {
           code: 'F05',
           name: 'Wrong Condition',
           message: `Unable to fulfill the condition:  ` +
-                                              `${executionCondition}`,
+                                              `${transfer.executionCondition}`,
           triggered_by: plugin.getAccount(),
           triggered_at: new Date().toISOString(),
           forwarded_by: [],
           additional_info: {}
         })
-        return
       }
 
       console.log(` 4. Accepted payment with condition ` +
-                                              `${executionCondition}.`)
+                                              `${transfer.executionCondition}.`)
       console.log(`    - Fulfilling transfer on the ledger ` +
-                                            `using fulfillment: ${fulfillment}`)
+                                 `using fulfillment: ${base64url(fulfillment)}`)
 
       // The ledger will check if the fulfillment is correct and
       // if it was submitted before the transfer's rollback timeout
-      plugin.fulfillCondition(transfer.id, fulfillment).catch(function () {
-        console.log(`    - Error fulfilling the transfer`)
-      })
+      plugin.fulfillCondition(transfer.id, base64url(fulfillment))
+        .catch(function () {
+          console.log(`    - Error fulfilling the transfer`)
+        })
       console.log(`    - Payment complete`)
     }
   })
