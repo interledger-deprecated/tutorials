@@ -8,15 +8,8 @@ function base64url (buf) {
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
-function toBase64(base64url) {
-  base64url = base64url.replace(/-/g, '+').replace(/_/g, '/');
-  while (base64url.length % 4)
-  base64url += '=';
-  return base64url
-}
-
 function sha256 (preimage) {
-  return crypto.createHash('sha256').update(preimage).digest('base64')
+  return crypto.createHash('sha256').update(preimage).digest()
 }
 
 let fulfillments = {}

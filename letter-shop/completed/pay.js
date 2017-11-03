@@ -45,10 +45,11 @@ plugin.connect().then(function () {
   })
 
   // Handle fulfillments
-  plugin.on('outgoing_fulfill', function (transferId, fulfillment) {
-    console.log(`    - Transfer executed. Got fulfillment: ${fulfillment}`)
+  plugin.on('outgoing_fulfill', function (transferId, fulfillmentBase64) {
+    console.log('    - Transfer executed. Got fulfillment: ' +
+                                                      fulfillmentBase64)
     console.log(` 3. Collect your letter at ` +
-                                    `http://localhost:8000/${fulfillment}`)
+                           `http://localhost:8000/${fulfillmentBase64}`)
     plugin.disconnect()
     process.exit()
   })
