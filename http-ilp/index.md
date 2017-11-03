@@ -104,7 +104,7 @@ $ curl -v -X GET localhost:8000/ -H Pay-Token:BPtQLNWS7owdlvFlNkMKbVjpBlmvuh1A-V
 > Pay-Token:BPtQLNWS7owdlvFlNkMKbVjpBlmvuh1A-V47XdYmeW8
 >
 < HTTP/1.1 402 Payment Required
-< Pay: 1000 g.crypto.ripple.escrow.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW.JCOtNQAm8OQlKPHR8dMeJixwfDXdpEQJw BEYMjoXSFQSCKlFRZ6itCQ
+< Pay: interledger-psk 1000 g.crypto.ripple.escrow.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW.JCOtNQAm8OQlKPHR8dMeJixwfDXdpEQJw BEYMjoXSFQSCKlFRZ6itCQ
 < Pay-Balance: 0
 < Content-Type: text/plain; charset=utf-8
 < Content-Length: 109
@@ -120,10 +120,10 @@ That's a lot of output. The lines we care about are in the response headers.
 They're called `Pay` and `Pay-Balance`.
 
 ```
-Pay: 1000 g.crypto.ripple.escrow.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW.JCOtNQAm8OQlKPHR8dMeJixwfDXdpEQJw BEYMjoXSFQSCKlFRZ6itCQ
+Pay: interledger-psk 1000 g.crypto.ripple.escrow.rrhnXcox5bEmZfJCHzPxajUtwdt772zrCW.JCOtNQAm8OQlKPHR8dMeJixwfDXdpEQJw BEYMjoXSFQSCKlFRZ6itCQ
 ```
 
-`Pay` is made up of three portions: There's an amount required to fund this
+`Pay` is made up of four portions: There's a payment method identifier `'interledger-psk'`, an amount required to fund this
 request, an ILP address to send money to, and a shared secret. The shared
 secret lets us use the [PSK
 Protocol](https://github.com/interledger/rfcs/blob/master/0016-pre-shared-key/0016-pre-shared-key.md#pre-shared-key-transport-protocol-psk)
