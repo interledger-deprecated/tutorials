@@ -23,6 +23,9 @@ let balances = {}
 
 const cost = 10
 
+// work around https://github.com/interledgerjs/ilp-plugin/pull/1
+plugin._prefix = 'g.crypto.ripple.escrow.'
+
 console.log(`== Starting the shop server == `)
 console.log(` 1. Connecting to an account to accept payments...`)
 
@@ -90,7 +93,8 @@ console.log('request headers', req.headers)
 
       // Respond with a 402 HTTP Status Code (Payment Required)
       res.statusCode = 402
-      res.setHeader(`Pay`, `interledger-psk ${cost} ${account}.${clientId} ${base64url(sharedSecret)}`)
+      // res.setHeader(`Pay`, `interledger-psk ${cost} ${account}.${clientId} ${base64url(sharedSecret)}`)
+      res.setHeader(`Pay`, `${cost} ${account}.${clientId} ${base64url(sharedSecret)}`)
       res.setHeader(`Pay-Balance`, balances[base64url(sharedSecret)].toString())
 
       res.end(`Please send an Interledger-PSK payment of` +

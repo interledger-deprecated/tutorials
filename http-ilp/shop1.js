@@ -19,8 +19,6 @@ function hmac (secret, input) {
 
 let sharedSecrets = {}
 let letters = {}
-let balances = {}
-
 const cost = 10
 
 console.log(`== Starting the shop server == `)
@@ -57,45 +55,50 @@ plugin.connect().then(function () {
     if (requestUrl.path === `/`) {
       // Request for a letter with no attached fulfillment
 
+      // Respond with a 402 HTTP Status Code (Payment Required)
+      res.statusCode = 402
+
       // Generate a client ID and a shared secret from which this client
       // can derive fulfillment/condition pairs.
       const clientId = base64url(crypto.randomBytes(8))
-      let sharedSecret = crypto.randomBytes(32)
-console.log('request headers', req.headers)
-      // Use client-generated shared secret, if presented:
-      if (req.headers['pay-token']) {
-        sharedSecret = Buffer.from(req.headers['pay-token'], 'base64')
-        console.log('Accepted shared secret from client', req.headers['pay-token'], balances)
-        if (balances[base64url(sharedSecret)]) {
-          // This code path is now also used to deliver the letter after the client paid:
-          if (balances[base64url(sharedSecret)] >= cost) {
-            // Get the letter that we are selling
-            const letter = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-              .split('')[(Math.floor(Math.random() * 26))]
-            balances[base64url(sharedSecret)] -= cost
-            res.end('Your letter: ' + letter)
-            return
-          }
-        }
-      }
+      const sharedSecret = crypto.randomBytes(32)
 
       // Store the shared secret to use when we get paid
-      sharedSecrets[clientId] = sharedSecret
-      if (!balances[base64url(sharedSecret)]) {
-        // The client is just establishing its prepaid account, but hasn't paid yet
-        balances[base64url(sharedSecret)] = 0
-      }
+      sharedSecrets[clientId]  = sharedSecret
 
       console.log(`    - Waiting for payment...`)
 
-      // Respond with a 402 HTTP Status Code (Payment Required)
-      res.statusCode = 402
       res.setHeader(`Pay`, `interledger-psk ${cost} ${account}.${clientId} ${base64url(sharedSecret)}`)
-      res.setHeader(`Pay-Balance`, balances[base64url(sharedSecret)].toString())
 
       res.end(`Please send an Interledger-PSK payment of` +
           ` ${normalizedCost} ${ledgerInfo.currencyCode} to ${account}.${clientId}` +
           ` using the shared secret ${base64url(sharedSecret)}\n`)
+    } else {
+      // Request for a letter with the fulfillment in the path
+
+      // Get fulfillment from the path
+      const fulfillmentBase64 = requestUrl.path.substring(1)
+
+      // Lookup the letter we stored previously for this fulfillment
+      const letter = letters[fulfillmentBase64]
+
+      if (!letter) {
+        // We have no record of a letter that was issued for this fulfillment
+
+        // Respond with a 404 HTTP Status Code (Not Found)
+        res.statusCode = 404
+
+        console.log('     - No letter found for fulfillment: ' +
+                                                      fulfillmentBase64)
+
+        res.end(`Unrecognized fulfillment.`)
+      } else {
+        // Provide the customer with their letter
+        res.end(`Your letter: ${letter}`)
+
+        console.log(` 5. Providing paid letter to customer ` +
+                                 `for fulfillment ${fulfillmentBase64}`)
+      }
     }
   }).listen(8000, function () {
     console.log(`    - Listening on http://localhost:8000`)
@@ -105,6 +108,26 @@ console.log('request headers', req.headers)
 
   // Handle incoming payments
   plugin.on('incoming_prepare', function (transfer) {
+    if (parseInt(transfer.amount) < 10) {
+      // Transfer amount is incorrect
+      console.log(`    - Payment received for the wrong amount ` +
+                                        `(${transfer.amount})... Rejected`)
+
+      const normalizedAmount = transfer.amount /
+                            Math.pow(10, parseInt(ledgerInfo.currencyScale))
+
+      plugin.rejectIncomingTransfer(transfer.id, {
+        code: 'F04',
+        name: 'Insufficient Destination Amount',
+        message: `Please send at least 10 ${ledgerInfo.currencyCode},` +
+                  `you sent ${normalizedAmount}`,
+        triggered_by: plugin.getAccount(),
+        triggered_at: new Date().toISOString(),
+        forwarded_by: [],
+        additional_info: {}
+      })
+      return
+    }
     // Generate fulfillment from packet and this client's shared secret
     const ilpPacket = Buffer.from(transfer.ilp, 'base64')
     const payment = IlpPacket.deserializeIlpPayment(ilpPacket)
@@ -132,10 +155,15 @@ console.log('request headers', req.headers)
     const fulfillmentGenerator = hmac(secret, 'ilp_psk_condition')
     const fulfillment =  hmac(fulfillmentGenerator, ilpPacket)
 
-    // Increase this client's balance
-    balances[base64url(secret)] += parseInt(transfer.amount)
+    // Get the letter that we are selling
+    const letter = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+      .split('')[(Math.floor(Math.random() * 26))]
 
-    console.log(`    - Increase balance for shared secret ${base64url(secret)} with ${transfer.amount} to ${balances[base64url(secret)]}. `)
+    console.log(`    - Generated letter (${letter}) `)
+
+    // Store the letter (indexed by the fulfillment) to use when the customer
+    // requests it
+    letters[base64url(fulfillment)] = letter
 
     console.log(` 4. Accepted payment with condition ` +
                                             `${transfer.executionCondition}.`)
