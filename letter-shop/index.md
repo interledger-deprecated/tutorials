@@ -592,24 +592,76 @@ If you switch back to the terminal window for your server you'll see some additi
 
 :tada: Congratulations, that's step 5 of 5 and you now have a working server too.
 
-## Bonus Step: A Paying Proxy
+## Bonus Step: Letter Shop Client
 
 It's very cumbersome to copy and paste the condition from your browser to your command-line terminal each time you need to pay for something online, and then to copy and paste back the fulfillment from your terminal to your browser once you have paid. 
 
-For most paid services we'd expect the client to detect that a payment is required, make the payment, and then retry the request.
+But we can easily write a script that fetches http://localhost:8000, parses the body to see what payment is required, pays, and then fetches the letter for you. Now you can buy a letter from the Letter Shop right from your command line terminal, without having to switch to your web browser:
 
-To do this we need to make a few tweaks to the server and client.
+```js
+const IlpPacket = require('ilp-packet')
+const plugin = require('./plugins.js').xrp.Customer()
+const uuid = require('uuid/v4')
+const fetch = require('node-fetch')
 
-First, we need to make our responses machine readable so that the client can find the details of the payment required in the response. Recall how we used the 402 (Payment Required) HTTP response in the server when we responded to the initial request. Now we can see how this is useful for clients to help them recognise the response type.
+function base64url (buf) {
+  return buf.toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
 
-Another minor change that is required is to put the payment details in a response header in a standard format that clients recognise.
+plugin.connect().then(function () {
+  return fetch('http://localhost:8000/')
+}).then(function (res) {
+  return res.text()
+}).then(function (body) {
+  const parts = body.split(' ')
+  if (parts[0] === 'Please') {
+    const destinationAddress = parts[16]
+    const destinationAmount = parts[17]
+    const condition = parts[18]
+    return plugin.sendTransfer({
+      id: uuid(),
+      from: plugin.getAccount(),
+      to: destinationAddress,
+      ledger: plugin.getInfo().prefix,
+      expiresAt: new Date(new Date().getTime() + 1000000).toISOString(),
+      amount: destinationAmount,
+      executionCondition: condition,
+      ilp: base64url(IlpPacket.serializeIlpPayment({
+        account: destinationAddress,
+        amount: destinationAmount,
+        data: ''
+      }))
+    })
+  }
+})
 
-Modify the code in `shop.js` to look like this:
+plugin.on('outgoing_fulfill', function (transferId, fulfillmentBase64) {
+  fetch('http://localhost:8000/' + fulfillmentBase64).then(function (res) {
+    return res.text()
+  }).then(function (body) {
+    console.log(body)
+    return plugin.disconnect()
+  }).then(function () {
+    process.exit()
+  })
+})
+```
+
+With the Letter Shop running, you can try out this script from your terminal:
+```shell
+$ node ./client.js
+Your letter: B
+```
+
+As you can see, this code relies on the exact phrasing of the text; it checks if the text starts with 'Please', and if so, it simply looks for the 16th, 17th, and 18th word on the page.
+This is of course not a very robust design, it would be very brittle if the web design of the Letter Shop were to change. Therefore, it's better if we separate the machine-readable information
+into a http response header. We can use a recently proposed format for this, as described in the [draft-hope-bailie-http-payments internet draft](https://datatracker.ietf.org/doc/draft-hope-bailie-http-payments). For this, we add a line to the Letter Shop code, just before the `res.end` line:
 
 ```js
       console.log(`    - Waiting for payment...`)
 
-      res.setHeader("Pay", `${cost} ${account} ${condition}`)
+      res.setHeader("Pay", `interledger-condition ${cost} ${account} ${condition}`)
 
       res.end(`Please send an Interledger payment of ${normalizedCost} ${ledgerInfo.currencyCode} to ${account} using the condition ${condition}\n` +
               `> node ./pay.js ${account} ${cost} ${condition}`)
@@ -617,23 +669,24 @@ Modify the code in `shop.js` to look like this:
 
 When our shop responds to the request for a letter with a *"Payment Required"* response it will include the details of how to make the payment in the *"Pay"* header.
 
-Clients that know how to interpret that header can process it and make the payment without the user intervening.
+Clients that know how to interpret that header can process it and make the payment without relying on a specific phrasing on the human-readable web page.
 
-We have written a little proxy service that can do this for you. Have a look at `proxy.js` and you'll note that it has a lot of similarities with our client `pay.js` script.
+You can now update your client script, so that instead of parsing the words in the response body, it looks at the response headers:
 
-The key differences are:
-1. It hosts a web server at http://localhost:8001 which forwards any requests it receives to http://localhost:8000
-1. It intercepts the response and, if a payment is required, makes the payment
-1. After making a payment and getting back the fulfillment the proxy will retry the request and only then will it pass the response back to the original caller.
-
-In the terminal windo where you ran your client, start the proxy instead:
-
-```shell
-node ./proxy.js
+```js
+plugin.connect().then(function () {
+  return fetch('http://localhost:8000/')
+}).then(function (res) {
+  const parts = res.headers.get('Pay').split(' ')
+  if (parts[0] === 'interledger-condition') {
+    const destinationAmount = parts[1]
+    const destinationAddress = parts[2]
+    const condition = parts[3]
+    return plugin.sendTransfer({
+      // ...
 ```
-Now, instead of visiting http://localhost:8000/, visit http://localhost:8001/. This will take a while to load because in the background the proxy is busy paying for your request.
 
-Look at the two terminal windows to see the activity at the shop and the proxy for each request.
+You can see the completed `client.js` script [here](./completed/client.js). That's all for this tutorial!
 
 ## What have we learned?
 
@@ -648,8 +701,6 @@ The plugin used in all three scripts exposes the Ledger Plugin Interface (LPI) a
 
 ## What's next?
 
-There are a number of other tutorials that build on this one (some are still a work in progress).
+In the next tutorial, called 'http-ilp', we will add more features to this `Pay` header: [next tutorial](../http-ilp)
 
-If you look at the Ledger Plugin Interface documentation you'll see there are a few functions we didn't cover here such as `sendRequest( message:Message )` which are critical to more complex Interledger payments. These will be covered in more detail in later tutorials along with concepts such as quoting and some of the other application layer protocols that have been developed on top of ILP.
-
-If you read the paragraphs above, you will have seen quite a few new words; see the glossary in [IL-RFC-19, draft 1](https://interledger.org/rfcs/0019-glossary/draft-1.html) as a reference if you forget some of them.
+Also, if you read the paragraphs above, you will have seen quite a few new words; see the glossary in [IL-RFC-19, draft 1](https://interledger.org/rfcs/0019-glossary/draft-1.html) as a reference if you forget some of them.
