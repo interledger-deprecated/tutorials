@@ -5,8 +5,8 @@
   "main": "pay.js",
   "dependencies": {
     "ilp-packet": "^1.3.0",
-    "ilp-plugin-payment-channel-framework": "^1.1.4",
-    "ilp-plugin-xrp-escrow": "github:ripple/ilp-plugin-xrp-escrow#v1.0.7",
+    "ilp-plugin-payment-channel-framework": "^1.2.0",
+    "ilp-plugin-xrp-escrow": "github:michielbdejong/ilp-plugin-xrp-escrow#72e4178",
     "koa": "^2.3.0",
     "koa-ilp": "0.0.1",
     "koa-router": "^7.2.1",
