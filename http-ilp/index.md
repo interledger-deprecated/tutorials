@@ -84,10 +84,9 @@ from the URL path (where the client was putting the base64url-encoded fulfillmen
 we'll call `Pay-Token`. The shop will also add a response header, `Pay-Balance`, which will inform the client of its
 current balance.
 
-Note that in the [Trustlines](../trustlines) tutorial, we will see another way of implementing the idea of prepaid
+Note that in the [Hosted Ledgers](../hosted-ledgers) tutorial, we will see another way of implementing the idea of prepaid
 balance at the shop; there, the shop will run an Interledger-enabled ledger, at which the client has a balance. Both
-have advantages and disadvantages, as will be discussed in more detail in the trustlines tutorial.
-
+have advantages and disadvantages, as will be discussed in more detail in the hosted-ledgers tutorial.
 
 ## Customer-generated shared secret
 
@@ -260,6 +259,10 @@ As you can see, the `Pay` header is made up of three portions instead of four no
 
 The `Pay-Balance` header tells us how much money is on our token right now.
 We've not funded it yet, so the amount is `0`.
+
+## What's next
+
+In the next tutorial, we will see how letters can flow from the shop, as money flows from the client in a stream. We call that [Streaming Payments](../streaming-payments)
 
 ## What you learned
 
