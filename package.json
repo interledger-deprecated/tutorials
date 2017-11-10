@@ -5,6 +5,7 @@
   "main": "pay.js",
   "dependencies": {
     "ilp-packet": "^1.3.0",
+    "ilp-plugin-btp-client": "github:michielbdejong/ilp-plugin-btp-client",
     "ilp-plugin-payment-channel-framework": "^1.1.4",
     "ilp-plugin-xrp-escrow": "github:ripple/ilp-plugin-xrp-escrow#v1.0.7",
     "koa": "^2.3.0",

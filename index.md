@@ -10,6 +10,8 @@ first time. The main programming language used is JavaScript.
 * [Streaming Payments](../tutorials/streaming-payments)
 * [Trustlines](../tutorials/trustlines)
 * [HTTP ILP](../tutorials/http-ilp)
+* [Connectors](./connectors)
+* [Payment Requests](./payment-requests)
 
 ## Versioning
 
