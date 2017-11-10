@@ -2,7 +2,7 @@
 
 ## What you need before you start:
 
-* complete the [Letter Shop](./letter-shop) tutorial first, including the Bonus Step
+* complete the [Letter Shop](/tutorials/letter-shop) tutorial first, including the Bonus Step
 
 ## What you'll learn:
 
@@ -262,7 +262,7 @@ We've not funded it yet, so the amount is `0`.
 
 ## What's next
 
-In the next tutorial, we will see how letters can flow from the shop, as money flows from the client in a stream. We call that [Streaming Payments](../streaming-payments)
+In the next tutorial, we will see how letters can flow from the shop, as money flows from the client in a stream. We call that [Streaming Payments](/tutorials/streaming-payments)
 
 ## What you learned
 

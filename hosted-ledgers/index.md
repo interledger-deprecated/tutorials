@@ -2,7 +2,7 @@
 
 ## What you need before you start:
 
-* complete the [Letter Shop](../letter-shop), [http-ilp](../http-ilp), and [Streaming Payments](./streaming-payments) tutorials first
+* complete the [Letter Shop](/tutorials/letter-shop), [http-ilp](/tutorials/http-ilp), and [Streaming Payments](/tutorials/streaming-payments) tutorials first
 
 ## What you'll learn:
 
