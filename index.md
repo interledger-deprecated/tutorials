@@ -7,11 +7,10 @@ first time. The main programming language used is JavaScript.
 ## Tutorials
 
 * [The Letter Shop](../tutorials/letter-shop)
-* [Streaming Payments](../tutorials/streaming-payments)
-* [Trustlines](../tutorials/trustlines)
 * [HTTP ILP](../tutorials/http-ilp)
-* [Connectors](./connectors)
-* [Payment Requests](./payment-requests)
+* [Streaming Payments](../tutorials/streaming-payments)
+* [Hosted Ledgers](../tutorials/hosted-ledgers)
+* [Multi-Transfer Payments](./multi-transfer-payments)
 
 ## Versioning
 
