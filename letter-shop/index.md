@@ -701,6 +701,6 @@ The plugin used in all three scripts exposes the Ledger Plugin Interface (LPI) a
 
 ## What's next?
 
-In the next tutorial, called 'http-ilp', we will add more features to this `Pay` header: [next tutorial](../http-ilp)
+In the next tutorial, called 'http-ilp', we will add more features to this `Pay` header: [next tutorial](/tutorials/http-ilp)
 
 Also, if you read the paragraphs above, you will have seen quite a few new words; see the glossary in [IL-RFC-19, draft 1](https://interledger.org/rfcs/0019-glossary/draft-1.html) as a reference if you forget some of them.

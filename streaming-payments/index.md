@@ -2,7 +2,7 @@
 
 ## What you need before you start:
 
-* complete the [Letter Shop](../letter-shop) and [http-ilp](../http-ilp) tutorials first
+* complete the [Letter Shop](/tutorials/letter-shop) and [http-ilp](/tutorials/http-ilp) tutorials first
 
 ## What you'll learn:
 
@@ -118,4 +118,4 @@ be appropriate to use streaming content and streaming payments instead of one-sh
 
 You may have noticed that paying via the XRP testnet ledger takes a few seconds. That's why, in the previous tutorial, we introduced
 the `Pay-Token` / `Pay-Balance` protocol. But there is another way to make streaming Interledger payments faster, as we'll see in
-the next tutorial: [Hosted Ledgers](../hosted-ledgers).
+the next tutorial: [Hosted Ledgers](/tutorials/hosted-ledgers).
