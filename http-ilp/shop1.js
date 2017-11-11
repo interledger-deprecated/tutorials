@@ -68,7 +68,7 @@ plugin.connect().then(function () {
 
       console.log(`    - Waiting for payment...`)
 
-      res.setHeader(`Pay`, `interledger-psk ${cost} ${account}.${clientId} ${base64url(sharedSecret)}`)
+      res.setHeader(`Pay`, `interledger-hkdf ${cost} ${account}.${clientId} ${base64url(sharedSecret)}`)
 
       res.end(`Please send an Interledger-PSK payment of` +
           ` ${normalizedCost} ${ledgerInfo.currencyCode} to ${account}.${clientId}` +
@@ -152,8 +152,7 @@ plugin.connect().then(function () {
       return
     }
     console.log(`    - Calculating hmac; for clientId ${clientId}, the shared secret is ${base64url(secret)}.`)
-    const fulfillmentGenerator = hmac(secret, 'ilp_psk_condition')
-    const fulfillment =  hmac(fulfillmentGenerator, ilpPacket)
+    const fulfillment = hmac(secret, ilpPacket)
 
     // Get the letter that we are selling
     const letter = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ')

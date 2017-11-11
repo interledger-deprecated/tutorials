@@ -41,8 +41,7 @@ plugin.connect().then(function () {
       data: ''
     })
     console.log('Calculating hmac using shared secret:', base64url(sharedSecret))
-    const fulfillmentGenerator = hmac(sharedSecret, 'ilp_psk_condition')
-    const fulfillment =  hmac(fulfillmentGenerator, ilpPacket)
+    const fulfillment = hmac(sharedSecret, ilpPacket) // see https://github.com/interledger/rfcs/issues/335
     const condition = sha256(fulfillment)
     return plugin.sendTransfer({
       id: uuid(),

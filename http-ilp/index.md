@@ -6,23 +6,24 @@
 
 ## What you'll learn:
 
-* how to use the Pre-Shared Key (PSK) protocol for repeated conditional Interledger payments
+* hmac-based key derivation (HKDF) for repeated conditional Interledger payments
 * how to use the ILP curl tool to automatically administer your plugin credentials
 * how to use the koa-ilp module in a webserver middleware framework
 * how to use a `Pay-Token` to pay for multiple http requests with prepaid balance
 
-## PSK
+## Using key derivation to generate fulfillment/condition pairs
 
 The `Pay` header we used in the Letter Shop tutorial specifies which sha256 condition to
 use for the payment. But once this condition has been used, and its fulfillment (the
 preimage of the sha256 hash) has been made public, it cannot be reused.
 
 Therefore, if the Letter Shop wants to give its customers a way to securely pay for
-multiple letters, it can use the [Pre-Shared Secet (PSK)](https://interledger.org/rfcs/0016-pre-shared-key/draft-3.html)
-protocol, to give each customer
+multiple letters, it can give each customer
 a unique pre-shared secret, from which endless fulfillment/condition pairs can be derived.
+This process of deriving endless keys from a pre-shared secret is called
+an Hmac-Based Key Derivation Function (or HKDF, for short).
 
-To do this, the shop needs to use a `Pay` header with the 'interledger-psk' payment method, instead
+To do this, the shop needs to use a `Pay` header with the 'interledger-hkdf' payment method, instead
 of the 'interledger-condition' method which we used in the previous tutorial.
 
 In order to make each client uniquely identifiable, a different `clientId` is added to the shop's
@@ -48,8 +49,7 @@ const ilpPacket = IlpPacket.serializeIlpPayment({
   data: ''
 })
 console.log('Calculating hmac using shared secret:', base64url(sharedSecret))
-const fulfillmentGenerator = hmac(sharedSecret, 'ilp_psk_condition')
-const fulfillment =  hmac(fulfillmentGenerator, ilpPacket)
+const fulfillment = hmac(sharedSecret, ilpPacket)
 const condition = sha256(fulfillment)
 ```
 
@@ -58,7 +58,8 @@ This process is deterministic, in the sense that if the client sends the ILP pac
 payment (which it does), that will allow the shop to see the client's `clientId`, and to derive the
 same fulfillment/condition pair as the client did.
 
-The `paymentId` is still always set to 0 in this tutorial, so we're not really making use of PSK's ability
+The `paymentId` is still always set to 0 in this tutorial, so we're not really making use of
+[hmac-based key derivation](https://en.wikipedia.org/wiki/HKDF)
 to derive endless fulfillment/condition pairs from a single shared secret; we're mainly using PSK here because
 'interledger-psk' is a more standard payment method than 'interledger-condition', and more tools are available
 for it, as we'll see shortly.
@@ -128,7 +129,7 @@ You can see the changes from this and the previous section implemented in `shop2
 # ILP Curl
 
 So far, in this tutorial, we updated the Letter Shop with three extra improvements:
-* use the (repeatable) `'interledger-psk'` payment method instead of the more basic `'interledger-condition'` method
+* use the (repeatable) `'interledger-hkdf'` payment method instead of the more basic `'interledger-condition'` method
 * add prepaid balance for each customer of the shop
 * let the client pick the shared secret
 
@@ -136,7 +137,7 @@ As a reader, you may be asking yourself where all of these small improvements ar
 to add them in this tutorial. The answer is we didn't pick them by accident: they are all things you need to change
 to become compatible with the new 'http-ilp' standard. There are two final changes which we need to make in order to become
 compatible with the current experimental implementation of http-ilp (which is slightly different from the latest version of
-the http-ilp specification at IETF discussions): remove the `'interledger-psk '` string from the `Pay` header,
+the http-ilp specification at IETF discussions): remove the `'interledger-hkdf '` string from the `Pay` header,
 and use a [different string](https://github.com/interledgerjs/ilp-plugin/pull/1) to identify the XRP testnet ledger 
 
 These last tweaks have been made in `shop3.js` and `client3.js`, and again,
