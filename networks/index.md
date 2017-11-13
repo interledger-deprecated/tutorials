@@ -110,7 +110,11 @@ to set up peering. Now, your Interledger node needs to run a connector, a ledger
 Your connector will now also exchange ledger prefix broadcasts directly with other testnet participants. Please also keep peering with Amundsen, so that the IToT remains fully connected
 and doesn't get split up into local pockets.
 
-## Binary payment requests
+
+====
+last two sections are not really tutorial, should link from here to wiki pages for this:
+
+## Getting test money from the Interfaucet
 In the past, you saw the `Pay` header; now, post an IPR to the Interfaucet to see how that does the same thing.
 
 ## Setting up an account on the Ethereum Rinkeby testnet
