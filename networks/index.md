@@ -199,3 +199,40 @@ If the ledger performs well and doesn't cheat, and there is fair competition bet
 
 ## Interfaucet
 
+# (Experimental) Forwarded Payments
+
+To finish off this tutorial, we want to present you an experimental new feature that's not supported by all Interledger implementations yet:
+forwarded payments. The idea is quite simply, that each connector derives the onward amount from the incoming amount, instead of from the destination
+amount. In fact, the destination amount is not included in the ILP packet for a forwarded payment. Instead, the receiver should have another way to
+determine if the ammount that arrived was high enough. Contrary to how this works in the plain-old-banking-system, the receiver will reject the entire
+payment if too much value was lost in commissions and transfer fees along the way. To make your connector support forwarded payments, edit its code
+as follows:
+
+```js
+let onwardAmount
+if (ilpPacket.type === TYPE_EXACT) {
+  onwardAmount = ilpPacket.data.amount
+} else if (ilpPacket.type === TYPE_FORWARDED) {
+  onwardAmount = parseInt(incomingTransfer.amount) * EXCHANGE_RATE
+}
+```
+
+Forwarded payments work identically for two-transfer payments, but for payments that contain three or more transfers, their game theoretical
+analysis is different.
+With exact payments, if one connector tries to pay a tiny amount less in the onward transfer, the next connector would immediately notice the
+difference between its incoming transfer and the amount that it would have given in a quote response for delivering that exact destination payment.
+
+With forwarded payments, the next connector has no way to check how big a slice of the pie the previous connector took; it will just forward whatever
+came in in its incoming transfer, and if the receiver does not receive the required destination amount, they will reject the payment, and none of
+the connectors on the path will know which one of them took more than they quoted.
+
+If the market has moved against the sender since the quote, then the payment will fail anyway. If the market has moved in their favor, then the sender
+will send a higher transfer amount than necessary, and the connectors on the path can try to take a slice of that pie, at the cost of risking a failed
+payment. This raises a sort of [diner's dilemma](https://en.wikipedia.org/wiki/Unscrupulous_diner%27s_dilemma), where a dishonest connector would be
+hard to detect. We don't have a good mechanism to deal with that yet, and this is why forwarded payments are still experimental.
+
+On the other hand, forwarded payments allow a connector implementation to be simpler, since it does not need to keep track of the units of value of
+all destination ledgers in the network.
+for
+You might ask what would stop connectors from forwarding slightly less, but that same question can be asked about exact payments.
+
