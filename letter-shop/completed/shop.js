@@ -75,7 +75,7 @@ plugin.connect().then(function () {
 
       console.log(`    - Waiting for payment...`)
 
-      res.setHeader(`Pay`, `interledger-condition ${cost} ${account} ${condition}`)
+      res.setHeader(`Pay`, `interledger-condition ${cost} ${account} ${base64url(condition)}`)
 
       res.end(`Please send an Interledger payment of` +
           ` ${normalizedCost} ${ledgerInfo.currencyCode} to ${account}` +
