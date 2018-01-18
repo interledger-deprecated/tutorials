@@ -93,7 +93,7 @@ console.log('request headers', req.headers)
 
       // Respond with a 402 HTTP Status Code (Payment Required)
       res.statusCode = 402
-      // res.setHeader(`Pay`, `interledger-psk ${cost} ${account}.${clientId} ${base64url(sharedSecret)}`)
+      // res.setHeader(`Pay`, `interledger-hkdf ${cost} ${account}.${clientId} ${base64url(sharedSecret)}`)
       res.setHeader(`Pay`, `${cost} ${account}.${clientId} ${base64url(sharedSecret)}`)
       res.setHeader(`Pay-Balance`, balances[base64url(sharedSecret)].toString())
 
@@ -133,8 +133,7 @@ console.log('request headers', req.headers)
       return
     }
     console.log(`    - Calculating hmac; for clientId ${clientId}, the shared secret is ${base64url(secret)}.`)
-    const fulfillmentGenerator = hmac(secret, 'ilp_psk_condition')
-    const fulfillment =  hmac(fulfillmentGenerator, ilpPacket)
+    const fulfillment = hmac(secret, ilpPacket) // see https://github.com/interledger/rfcs/issues/335
 
     // Increase this client's balance
     balances[base64url(secret)] += parseInt(transfer.amount)

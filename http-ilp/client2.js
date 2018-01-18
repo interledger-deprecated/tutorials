@@ -27,7 +27,7 @@ plugin.connect().then(function () {
   })
 }).then(function (res) {
   const parts = res.headers.get('Pay').split(' ')
-  if (parts[0] === 'interledger-psk') {
+  if (parts[0] === 'interledger-hkdf') {
     const paymentId = 0
     const destinationAmount = parts[1]
     const destinationAddress = parts[2] + '.' + paymentId
@@ -38,8 +38,7 @@ plugin.connect().then(function () {
       data: ''
     })
     console.log('Calculating hmac using shared secret:', base64url(sharedSecret))
-    const fulfillmentGenerator = hmac(sharedSecret, 'ilp_psk_condition')
-    const fulfillment =  hmac(fulfillmentGenerator, ilpPacket)
+    const fulfillment = hmac(sharedSecret, ilpPacket)
     const condition = sha256(fulfillment)
     return plugin.sendTransfer({
       id: uuid(),
