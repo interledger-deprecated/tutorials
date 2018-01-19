@@ -33,41 +33,40 @@ In our case though, the ILP receiver (the shop) will be a BTP server, and the IL
 To learn more about the BTP protocol, read [the BTP spec](https://interledger.org/rfcs/0023-bilateral-transfer-protocol/draft-2.html).
 
 Thanks to the plugin architecture, we have to change surprisingly little to switch from XRP to BTP: we just include the
-`'ilp-plugin-payment-channel-framework'` plugin instead of the `'ilp-plugin-xrp-escrow'` one in plugins.js, and give it the config options
-it needs:
+`'ilp-plugin-payment-channel-framework'` plugin instead of the `'./plugins.js'` in both client and shop, and give each the config options
+it needs; in `client-for-hosted-ledger.js`:
+
+```js
+const HostedLedgerPlugin = require('ilp-plugin-payment-channel-framework')
+const plugin = new HostedLedgerPlugin({
+  server: 'btp+ws://:@localhost:9000/'
+})
+```
+
+And in `shop-with-hosted-ledger.js`:
 
 ```js
 const HostedLedgerPlugin = require('ilp-plugin-payment-channel-framework')
 const ObjStore = require('ilp-plugin-payment-channel-framework/src/model/in-memory-store')
-
-exports.xrp /* sic */ = {
-  Customer: function () {
-    return new HostedLedgerPlugin({
-      server: 'btp+ws://:@localhost:9000/'
-    })
+const plugin = new HostedLedgerPlugin({
+  listener: {
+    port: 9000
   },
-  Shop: function () {
-    return new HostedLedgerPlugin({
-      listener: {
-        port: 9000
-      },
-      incomingSecret: '',
-      maxBalance: '1000000000',
-      prefix: 'example.letter-shop.mytrustline.',
-      info: {
-        currencyScale: 9,
-        currencyCode: 'XRP',
-        prefix: 'example.letter-shop.mytrustline.',
-        connectors: []
-      },
-      _store: new ObjStore()
-    })
-  }
-}
+  incomingSecret: '',
+  maxBalance: '1000000000',
+  prefix: 'example.letter-shop.mytrustline.',
+  info: {
+    currencyScale: 9,
+    currencyCode: 'XRP',
+    prefix: 'example.letter-shop.mytrustline.',
+    connectors: []
+  },
+  _store: new ObjStore()
+})
 ```
 
-To run the streaming payments shop and client using this hosted ledger, run `node ./streaming-shop-from-before.js` in one terminal screen, and
-`node ./streaming-client-from-before.js` in another. You can experiment with tweaking the number of milliseconds on line 50 of `streaming-client-from-before.js`
+To run the streaming payments shop and client using this hosted ledger, run `node ./shop-with-hosted-ledger.js` in one terminal screen, and
+`node ./client-with-hosted-ledger.js` in another. You can experiment with tweaking the number of milliseconds on line 50 of `client-with-hosted-ledger.js`
 down from 1000 to e.g. 100, or even just 10.
 
 ## What you learned

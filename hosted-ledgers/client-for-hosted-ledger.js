@@ -1,5 +1,8 @@
 const IlpPacket = require('ilp-packet')
-const plugin = require('./plugins.js').xrp.Customer()
+const HostedLedgerPlugin = require('ilp-plugin-payment-channel-framework')
+const plugin = new HostedLedgerPlugin({
+  server: 'btp+ws://:@localhost:9000/'
+})
 const uuid = require('uuid/v4')
 const fetch = require('node-fetch')
 const crypto = require('crypto')
@@ -47,7 +50,7 @@ plugin.connect().then(function () {
         ilp: base64url(ilpPacket)
       })
       paymentId++
-    }, 1)
+    }, 1000)
   }
   res.body.pipe(process.stdout)
 })
