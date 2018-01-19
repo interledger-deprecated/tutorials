@@ -10,6 +10,7 @@ first time. The main programming language used is JavaScript.
 * [HTTP ILP](../tutorials/http-ilp)
 * [Streaming Payments](../tutorials/streaming-payments)
 * [Hosted Ledgers](../tutorials/hosted-ledgers)
+* [Multi-Transfer Payments](./multi-transfer-payments)
 
 ## Versioning
 
