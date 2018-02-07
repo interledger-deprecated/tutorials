@@ -81,4 +81,29 @@ You can see that moneyd has an address and credentials on the Ripple testnet. It
 
 Moneyd listens for WebSocket connections on localhost port 7768. Later, your ilp-curl command will connect to that port, to send an Interledger payment, via moneyd and amundsen, to the Heroku-hosted letter shop.
 
+### You ran ilp-curl
+
+The ilp-curl command will have done the following:
+* retrieve the https://letter-shop-testnet.herokuapp.com/ resource, specifying a client token
+* see the `Payment Required` response status, and the `Pay` header which specifies invoice details
+* make a PSK2 payment to increase the balance of the client token
+* retrieve the https://letter-shop-testnet.herokuapp.com/ resource again, this time successfully
+
+
+## What's next?
+
+### Paid API Server implementers
+If you have a website where you want to serve paid API requests, check out the Letter Shop code at
+https://github.com/michielbdejong/letter-shop/blob/mj-heroku-testnet/index.js. As you can see, it's
+only 30 lines of code! :)
+
+### Paid API Client implementers
+If you want to make your browser application support paid request, check out how superagent-ilp
+extracts the `Pay` header from a http request, and sets up the PSK2 payment via moneyd:
+https://github.com/interledgerjs/superagent-ilp/blob/master/index.js
+
+### Wallet implementers
+If you want to add Interledger support to your wallet implementation, we are working on tutorials
+that will teach you how to connect to a connector using an XRP payment channel or a Stripe charge.
+In the meantime, please come to https://gitter.im/interledger/Lobby and we will help you get set up!
 
