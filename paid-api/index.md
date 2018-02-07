@@ -1,8 +1,8 @@
 ---
 layout: page
-title: "Testnet Quickstart Tutorial | Interledger"
+title: "Testnet Quickstart Tutorial for Paid APIs | Interledger"
 ---
-# Testnet Quickstart Tutorial
+# Testnet Quickstart Tutorial for Paid APIs
 
 In this tutorial you'll learn how to connect to the Interledger testnet and but a letter from the testnet letter shop.
 
@@ -49,8 +49,8 @@ set environment; starting moneyd
 
 ## Buy a letter from the Letter Shop
 
-An example of an Interledger-compatible paid API, that accept testnet payments, is https://letter-shop-testnet.herokuapp.com/.
-To buy a letter from this lettershop, while you have moneyd running on your laptop, in a different terminal window run:
+An example of an Interledger-compatible paid API, that accepts testnet payments, is https://letter-shop-testnet.herokuapp.com/.
+To buy a letter from this lettershop, while you have moneyd running on your laptop, in a different terminal window, run:
 
 ```sh
 npm install -g ilp-curl
