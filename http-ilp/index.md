@@ -112,15 +112,15 @@ And then instead of generating a shared secret for it, the shop will use that se
 which the client picked.
 
 ```js
-     const sharedSecret = crypto.randomBytes(32)
+let sharedSecret = crypto.randomBytes(32)
 
-      // Use client-generated shared secret, if presented:
-      if (req.headers['Pay-Token']) {
-        sharedSecret = Buffer.from(req.headers['Pay-Token'], 'base64')
-        console.log('Accepted shared secret from client', req.headers['Pay-Token'])
-      }
+// Use client-generated shared secret, if presented:
+if (req.headers['Pay-Token']) {
+  sharedSecret = Buffer.from(req.headers['Pay-Token'], 'base64')
+  console.log('Accepted shared secret from client', req.headers['Pay-Token'])
+}
 
-      // Store the shared secret to use when we get paid
+// Store the shared secret to use when we get paid
 ```
 
 You can see the changes from this and the previous section implemented in `shop2.js` and `client2.js`.
